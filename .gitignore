@@ -1,0 +1,46 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+
+# Local agent memory and tooling state
+/PROJECT_MEMORY.md
+/.agents/
+/.codex/
+
+# Credentials and local environment
+.env
+.env.*
+!.env.example
+!.env.sample
+.aws/
+.ssh/
+.netrc
+.npmrc
+.pypirc
+.git-credentials
+credentials.json
+secrets.json
+secrets.yaml
+secrets.yml
+secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+*.kdbx
+id_rsa*
+id_ed25519*
+id_ecdsa*
+id_dsa*
+
+# Local runtime data and backups
+*.log
+*.pid
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+*.bundle
+/backups/
