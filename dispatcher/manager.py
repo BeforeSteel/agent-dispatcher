@@ -48,10 +48,55 @@ class AgentManager:
             item["id"]: Agent.from_dict(item) for item in self._raw_agents
         }
 
+    def _check_and_heal_relocated_agent(self, agent: Agent) -> bool:
+        """If a project folder was moved, find it in the configured scan directories and update its paths."""
+        if not agent.working_dir:
+            return False
+        old_path = Path(agent.working_dir)
+        if old_path.exists():
+            return False
+
+        folder_name = old_path.name
+        scan_dirs = self.settings.get("scan_dirs", [
+            str(HOME / "Projects"),
+            str(HOME / "Downloads")
+        ])
+
+        candidates = []
+        for s_dir in scan_dirs:
+            base = Path(s_dir)
+            if not base.exists():
+                continue
+            for cand in [base / folder_name, base / folder_name.lower(), base / folder_name.upper()]:
+                if cand.exists() and cand.is_dir() and cand != old_path:
+                    candidates.append(cand)
+
+        for cand in candidates:
+            has_app = (cand / "app" / "server.py").exists() or (cand / "app.py").exists() or any(cand.glob("*.sh"))
+            if has_app:
+                new_dir_str = str(cand.resolve())
+                old_dir_str = str(old_path)
+                agent.working_dir = new_dir_str
+                if agent.start_cmd and old_dir_str in agent.start_cmd:
+                    agent.start_cmd = agent.start_cmd.replace(old_dir_str, new_dir_str)
+                # Persist updated paths
+                for raw in self._raw_agents:
+                    if raw.get("id") == agent.id:
+                        raw["working_dir"] = agent.working_dir
+                        raw["start_cmd"] = agent.start_cmd
+                save_agents_config(self._raw_agents)
+                return True
+        return False
+
     def get_agent(self, agent_id: str) -> Optional[Agent]:
-        return self.agents.get(agent_id)
+        agent = self.agents.get(agent_id)
+        if agent:
+            self._check_and_heal_relocated_agent(agent)
+        return agent
 
     def list_agents(self) -> List[Agent]:
+        for agent in self.agents.values():
+            self._check_and_heal_relocated_agent(agent)
         return list(self.agents.values())
 
     def get_pid_file(self, agent: Agent) -> Path:
