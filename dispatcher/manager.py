@@ -148,19 +148,7 @@ class AgentManager:
 
         return None
 
-    def get_status(self, agent_id: str) -> AgentLiveStatus:
-        agent = self.get_agent(agent_id)
-        if not agent:
-            return AgentLiveStatus(
-                id=agent_id,
-                name=agent_id,
-                category="unknown",
-                type="unknown",
-                status="MISSING",
-                status_icon="❓",
-                error_message=f"Agent '{agent_id}' not found in registry"
-            )
-
+    def _compute_agent_status(self, agent: Agent) -> AgentLiveStatus:
         urls = get_network_urls(agent.port) if agent.port else []
         log_f = str(self.get_log_file(agent)) if agent.type in ("daemon", "systemd") else None
 
@@ -385,9 +373,31 @@ class AgentManager:
         except Exception:
             return (None, None, None)
 
-    def list_all_status(self) -> List[AgentLiveStatus]:
+    def get_status(self, agent_id: str, lang: Optional[str] = None) -> AgentLiveStatus:
+        """Fetch live status of an agent with optional i18n localization."""
+        agent = self.get_agent(agent_id)
+        if not agent:
+            return AgentLiveStatus(
+                id=agent_id,
+                name=agent_id,
+                category="unknown",
+                type="unknown",
+                status="MISSING",
+                status_icon="❓",
+                error_message=f"Agent '{agent_id}' not found in registry"
+            )
+
+        st = self._compute_agent_status(agent)
+        from .i18n import get_agent_name, get_agent_description
+        st.name = get_agent_name(agent, lang=lang)
+        st.description = get_agent_description(agent, lang=lang)
+        st.name_i18n = getattr(agent, "name_i18n", None)
+        st.description_i18n = getattr(agent, "description_i18n", None)
+        return st
+
+    def list_all_status(self, lang: Optional[str] = None) -> List[AgentLiveStatus]:
         """Fetch live status for all registered agents."""
-        return [self.get_status(aid) for aid in self.agents]
+        return [self.get_status(aid, lang=lang) for aid in self.agents]
 
     def start(self, agent_id: str) -> Tuple[bool, str]:
         """Start an agent service."""

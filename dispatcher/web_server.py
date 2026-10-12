@@ -37,30 +37,39 @@ def create_app(manager: AgentManager = None) -> Flask:
     @app.route("/api/status")
     def api_status():
         manager.reload()
-        statuses = [s.to_dict() for s in manager.list_all_status()]
+        from .i18n import get_current_lang
+        lang = request.args.get("lang") or get_current_lang()
+        statuses = [s.to_dict() for s in manager.list_all_status(lang=lang)]
         system_stats = get_system_stats()
         return jsonify({
             "ok": True,
             "agents": statuses,
-            "system": system_stats
+            "system": system_stats,
+            "lang": lang
         })
 
     @app.route("/api/agents/<agent_id>/start", methods=["POST"])
     def api_start(agent_id):
+        from .i18n import get_current_lang
+        lang = request.args.get("lang") or get_current_lang()
         ok, msg = manager.start(agent_id)
-        st = manager.get_status(agent_id).to_dict()
+        st = manager.get_status(agent_id, lang=lang).to_dict()
         return jsonify({"ok": ok, "message": msg, "status": st}), (200 if ok else 400)
 
     @app.route("/api/agents/<agent_id>/stop", methods=["POST"])
     def api_stop(agent_id):
+        from .i18n import get_current_lang
+        lang = request.args.get("lang") or get_current_lang()
         ok, msg = manager.stop(agent_id)
-        st = manager.get_status(agent_id).to_dict()
+        st = manager.get_status(agent_id, lang=lang).to_dict()
         return jsonify({"ok": ok, "message": msg, "status": st}), (200 if ok else 400)
 
     @app.route("/api/agents/<agent_id>/restart", methods=["POST"])
     def api_restart(agent_id):
+        from .i18n import get_current_lang
+        lang = request.args.get("lang") or get_current_lang()
         ok, msg = manager.restart(agent_id)
-        st = manager.get_status(agent_id).to_dict()
+        st = manager.get_status(agent_id, lang=lang).to_dict()
         return jsonify({"ok": ok, "message": msg, "status": st}), (200 if ok else 400)
 
     @app.route("/api/agents/<agent_id>/logs")

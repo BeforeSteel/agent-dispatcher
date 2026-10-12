@@ -28,6 +28,8 @@ class Agent:
     auto_start: bool = False
     enabled: bool = True
     tags: List[str] = field(default_factory=list)
+    description_i18n: Optional[Dict[str, str]] = None
+    name_i18n: Optional[Dict[str, str]] = None
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Agent":
@@ -59,6 +61,8 @@ class AgentLiveStatus:
     description: str = ""
     working_dir: Optional[str] = None
     error_message: Optional[str] = None
+    description_i18n: Optional[Dict[str, str]] = None
+    name_i18n: Optional[Dict[str, str]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)

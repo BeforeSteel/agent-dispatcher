@@ -15,7 +15,7 @@ const fallbackI18n = {
     "btn.start": "Запустити", "btn.stop": "Стоп", "btn.restart": "Перезапустити", "btn.logs": "Логи", "btn.open_ui": "Відкрити інтерфейс",
     "btn.scan": "Сканувати", "btn.add": "Додати", "btn.start_all": "Старт всі", "btn.stop_all": "Стоп всі",
     "tab.all": "Всі", "tab.running": "🟢 Активні", "tab.web": "🌐 Веб-додатки", "tab.cli": "⚡ CLI Агенти",
-    "search.placeholder": "Пошук агента..."
+    "search.placeholder": "Пошук агента...",
   },
   en: {
     "status.running": "Running", "status.stopped": "Stopped", "status.ready": "CLI Ready", "status.failed": "Failed",
@@ -23,7 +23,7 @@ const fallbackI18n = {
     "btn.start": "Start", "btn.stop": "Stop", "btn.restart": "Restart", "btn.logs": "Logs", "btn.open_ui": "Open Web UI",
     "btn.scan": "Scan", "btn.add": "Add Agent", "btn.start_all": "Start All", "btn.stop_all": "Stop All",
     "tab.all": "All", "tab.running": "🟢 Running", "tab.web": "🌐 Web Apps", "tab.cli": "⚡ CLI Agents",
-    "search.placeholder": "Search agent..."
+    "search.placeholder": "Search agent...",
   },
   ru: {
     "status.running": "Работает", "status.stopped": "Остановлен", "status.ready": "CLI Ready", "status.failed": "Ошибка",
@@ -31,7 +31,7 @@ const fallbackI18n = {
     "btn.start": "Запустить", "btn.stop": "Стоп", "btn.restart": "Перезапуск", "btn.logs": "Логи", "btn.open_ui": "Открыть интерфейс",
     "btn.scan": "Сканировать", "btn.add": "Добавить", "btn.start_all": "Старт все", "btn.stop_all": "Стоп все",
     "tab.all": "Все", "tab.running": "🟢 Активные", "tab.web": "🌐 Веб-приложения", "tab.cli": "⚡ CLI Агенты",
-    "search.placeholder": "Поиск агента..."
+    "search.placeholder": "Поиск агента...",
   }
 };
 
@@ -46,6 +46,28 @@ function t(key) {
     return fallbackI18n['uk'][key];
   }
   return key;
+}
+
+function getAgentName(agent) {
+  if (!agent) return '';
+  const key = `agent.${agent.id}.name`;
+  const translated = t(key);
+  if (translated !== key) return translated;
+  if (agent.name_i18n && agent.name_i18n[currentLang]) {
+    return agent.name_i18n[currentLang];
+  }
+  return agent.name || agent.id;
+}
+
+function getAgentDesc(agent) {
+  if (!agent) return '';
+  const key = `agent.${agent.id}.desc`;
+  const translated = t(key);
+  if (translated !== key) return translated;
+  if (agent.description_i18n && agent.description_i18n[currentLang]) {
+    return agent.description_i18n[currentLang];
+  }
+  return agent.description || '—';
 }
 
 async function loadI18n() {
@@ -158,7 +180,7 @@ async function fetchStatus(manual = false) {
   }
 
   try {
-    const res = await fetch('/api/status');
+    const res = await fetch(`/api/status?lang=${encodeURIComponent(currentLang)}`);
     const data = await res.json();
     if (data.ok) {
       agentsData = data.agents || [];
@@ -280,8 +302,8 @@ function renderCards() {
     // Filter by search
     if (searchQuery) {
       const matchId = (agent.id || '').toLowerCase().includes(searchQuery);
-      const matchName = (agent.name || '').toLowerCase().includes(searchQuery);
-      const matchDesc = (agent.description || '').toLowerCase().includes(searchQuery);
+      const matchName = (getAgentName(agent) || agent.name || '').toLowerCase().includes(searchQuery);
+      const matchDesc = (getAgentDesc(agent) || agent.description || '').toLowerCase().includes(searchQuery);
       if (!matchId && !matchName && !matchDesc) return false;
     }
     return true;
@@ -420,14 +442,14 @@ function buildCardHTML(agent) {
         <div class="flex items-start justify-between gap-2 mb-2">
           <div>
             <div class="flex items-center space-x-2">
-              <h3 class="font-bold text-white text-sm tracking-tight">${agent.name}</h3>
+              <h3 class="font-bold text-white text-sm tracking-tight" title="${getAgentName(agent)}">${getAgentName(agent)}</h3>
               <span class="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded border ${typeClass}">${agent.type}</span>
             </div>
             <span class="text-xs font-mono text-slate-500">ID: ${agent.id}</span>
           </div>
           <div>${statusBadge}</div>
         </div>
-        <p class="text-xs text-slate-400 line-clamp-2 mb-3">${agent.description || '—'}</p>
+        <p class="text-xs text-slate-400 line-clamp-2 mb-3">${getAgentDesc(agent)}</p>
         ${metricsHTML}
       </div>
 
@@ -506,7 +528,9 @@ function openLogsModal(id) {
   currentLogAgentId = id;
   const modal = document.getElementById('modal-logs');
   const title = document.getElementById('modal-logs-title');
-  if (title) title.textContent = `Логи: ${id}`;
+  const ag = agentsData.find(a => a.id === id);
+  const agentName = ag ? getAgentName(ag) : id;
+  if (title) title.textContent = `${t('modal.logs.title')}: ${agentName}`;
   if (modal) modal.classList.remove('hidden');
   fetchLogs(id);
 }

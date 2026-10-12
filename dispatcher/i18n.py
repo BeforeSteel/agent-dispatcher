@@ -102,7 +102,9 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "cli.stopped_state": "ЗУПИНЕНО",
         "cli.running_state": "ПРАЦЮЄ",
         "cli.failed_state": "ПОМИЛКА",
-        "cli.ready_state": "ГОТОВИЙ ДО ЗАПУСКУ"
+        "cli.ready_state": "ГОТОВИЙ ДО ЗАПУСКУ",
+
+        # Agent names and descriptions come from user registrations.
     },
     "en": {
         # General / App
@@ -197,7 +199,9 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "cli.stopped_state": "STOPPED",
         "cli.running_state": "RUNNING",
         "cli.failed_state": "FAILED",
-        "cli.ready_state": "CLI READY"
+        "cli.ready_state": "CLI READY",
+
+        # Agent names and descriptions come from user registrations.
     },
     "ru": {
         # General / App
@@ -292,7 +296,9 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "cli.stopped_state": "ОСТАНОВЛЕНО",
         "cli.running_state": "РАБОТАЕТ",
         "cli.failed_state": "ОШИБКА",
-        "cli.ready_state": "ГОТОВ К ЗАПУСКУ"
+        "cli.ready_state": "ГОТОВ К ЗАПУСКУ",
+
+        # Agent names and descriptions come from user registrations.
     }
 }
 
@@ -336,3 +342,43 @@ def t(key: str, lang: Optional[str] = None, **kwargs) -> str:
 def get_all_translations() -> Dict[str, Dict[str, str]]:
     """Return complete translation dictionaries for frontend JSON delivery."""
     return TRANSLATIONS
+
+
+def get_agent_name(agent: Any, lang: Optional[str] = None) -> str:
+    """Get localized agent name from i18n dict, agent model, or fallback."""
+    agent_id = getattr(agent, "id", None) or (agent.get("id") if isinstance(agent, dict) else "")
+    default_name = getattr(agent, "name", None) or (agent.get("name") if isinstance(agent, dict) else agent_id)
+    target_lang = lang or get_current_lang()
+
+    # 1. Check i18n translation key
+    key = f"agent.{agent_id}.name"
+    val = t(key, lang=target_lang)
+    if val != key:
+        return val
+
+    # 2. Check agent's name_i18n dictionary if present
+    name_i18n = getattr(agent, "name_i18n", None) or (agent.get("name_i18n") if isinstance(agent, dict) else None)
+    if isinstance(name_i18n, dict) and target_lang in name_i18n:
+        return name_i18n[target_lang]
+
+    return default_name or agent_id
+
+
+def get_agent_description(agent: Any, lang: Optional[str] = None) -> str:
+    """Get localized agent description from i18n dict, agent model, or fallback."""
+    agent_id = getattr(agent, "id", None) or (agent.get("id") if isinstance(agent, dict) else "")
+    default_desc = getattr(agent, "description", None) or (agent.get("description") if isinstance(agent, dict) else "")
+    target_lang = lang or get_current_lang()
+
+    # 1. Check i18n translation key
+    key = f"agent.{agent_id}.desc"
+    val = t(key, lang=target_lang)
+    if val != key:
+        return val
+
+    # 2. Check agent's description_i18n dictionary if present
+    desc_i18n = getattr(agent, "description_i18n", None) or (agent.get("description_i18n") if isinstance(agent, dict) else None)
+    if isinstance(desc_i18n, dict) and target_lang in desc_i18n:
+        return desc_i18n[target_lang]
+
+    return default_desc or ""

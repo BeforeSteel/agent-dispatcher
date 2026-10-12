@@ -36,8 +36,8 @@ def print_header(title: str):
 
 def cmd_list(manager: AgentManager, args):
     """Display table of all agents and their live status."""
-    statuses = manager.list_all_status()
     lang = getattr(args, "lang", None) or get_current_lang()
+    statuses = manager.list_all_status(lang=lang)
     if not statuses:
         print(f"\n{C_YELLOW}Реєстр порожній. Виконайте `agents scan` для пошуку додатків.{C_RESET}\n")
         return
@@ -104,15 +104,16 @@ def cmd_status(manager: AgentManager, args):
         cmd_list(manager, args)
         return
 
-    st = manager.get_status(args.agent_id)
     agent = manager.get_agent(args.agent_id)
     if not agent:
         print(f"{C_RED}❌ Агента '{args.agent_id}' не знайдено в реєстрі.{C_RESET}")
         return
 
+    st = manager.get_status(args.agent_id, lang=lang)
+
     title_txt = t("cli.status_agent", lang=lang)
-    print_header(f"{title_txt}: {agent.name} ({agent.id})")
-    print(f"  {C_BOLD}{t('cli.description', lang=lang)}:{C_RESET}        {agent.description or '—'}")
+    print_header(f"{title_txt}: {st.name} ({agent.id})")
+    print(f"  {C_BOLD}{t('cli.description', lang=lang)}:{C_RESET}        {st.description or '—'}")
     print(f"  {C_BOLD}{t('cli.category', lang=lang)}:{C_RESET}   {agent.category}  |  {C_BOLD}{t('cli.col.type', lang=lang)}:{C_RESET} {agent.type}")
 
     if st.status == "RUNNING":
