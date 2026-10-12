@@ -32,6 +32,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "btn.refresh": "Оновити стан",
         "btn.start_all": "Старт всі",
         "btn.stop_all": "Стоп всі",
+        "btn.theme": "Перемкнути тему (світла/темна)",
 
         # Tabs & Filters
         "tab.all": "Всі",
@@ -129,6 +130,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "btn.refresh": "Refresh",
         "btn.start_all": "Start All",
         "btn.stop_all": "Stop All",
+        "btn.theme": "Toggle theme (light/dark)",
 
         # Tabs & Filters
         "tab.all": "All",
@@ -226,6 +228,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "btn.refresh": "Обновить",
         "btn.start_all": "Старт все",
         "btn.stop_all": "Стоп все",
+        "btn.theme": "Переключить тему (светлая/темная)",
 
         # Tabs & Filters
         "tab.all": "Все",

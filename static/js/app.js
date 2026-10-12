@@ -13,7 +13,7 @@ const fallbackI18n = {
     "status.running": "Працює", "status.stopped": "Зупинено", "status.ready": "CLI Ready", "status.failed": "Помилка",
     "card.memory": "Пам'ять", "card.cpu": "CPU", "card.uptime": "Аптайм",
     "btn.start": "Запустити", "btn.stop": "Стоп", "btn.restart": "Перезапустити", "btn.logs": "Логи", "btn.open_ui": "Відкрити інтерфейс",
-    "btn.scan": "Сканувати", "btn.add": "Додати", "btn.start_all": "Старт всі", "btn.stop_all": "Стоп всі",
+    "btn.scan": "Сканувати", "btn.add": "Додати", "btn.start_all": "Старт всі", "btn.stop_all": "Стоп всі", "btn.theme": "Перемкнути тему (світла/темна)",
     "tab.all": "Всі", "tab.running": "🟢 Активні", "tab.web": "🌐 Веб-додатки", "tab.cli": "⚡ CLI Агенти",
     "search.placeholder": "Пошук агента...",
   },
@@ -21,7 +21,7 @@ const fallbackI18n = {
     "status.running": "Running", "status.stopped": "Stopped", "status.ready": "CLI Ready", "status.failed": "Failed",
     "card.memory": "Memory", "card.cpu": "CPU", "card.uptime": "Uptime",
     "btn.start": "Start", "btn.stop": "Stop", "btn.restart": "Restart", "btn.logs": "Logs", "btn.open_ui": "Open Web UI",
-    "btn.scan": "Scan", "btn.add": "Add Agent", "btn.start_all": "Start All", "btn.stop_all": "Stop All",
+    "btn.scan": "Scan", "btn.add": "Add Agent", "btn.start_all": "Start All", "btn.stop_all": "Stop All", "btn.theme": "Toggle theme (light/dark)",
     "tab.all": "All", "tab.running": "🟢 Running", "tab.web": "🌐 Web Apps", "tab.cli": "⚡ CLI Agents",
     "search.placeholder": "Search agent...",
   },
@@ -29,7 +29,7 @@ const fallbackI18n = {
     "status.running": "Работает", "status.stopped": "Остановлен", "status.ready": "CLI Ready", "status.failed": "Ошибка",
     "card.memory": "Память", "card.cpu": "CPU", "card.uptime": "Аптайм",
     "btn.start": "Запустить", "btn.stop": "Стоп", "btn.restart": "Перезапуск", "btn.logs": "Логи", "btn.open_ui": "Открыть интерфейс",
-    "btn.scan": "Сканировать", "btn.add": "Добавить", "btn.start_all": "Старт все", "btn.stop_all": "Стоп все",
+    "btn.scan": "Сканировать", "btn.add": "Добавить", "btn.start_all": "Старт все", "btn.stop_all": "Стоп все", "btn.theme": "Переключить тему (светлая/темная)",
     "tab.all": "Все", "tab.running": "🟢 Активные", "tab.web": "🌐 Веб-приложения", "tab.cli": "⚡ CLI Агенты",
     "search.placeholder": "Поиск агента...",
   }
@@ -91,6 +91,10 @@ function applyTranslations() {
     const key = el.getAttribute('data-i18n');
     el.textContent = t(key);
   });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const key = el.getAttribute('data-i18n-title');
+    el.title = t(key);
+  });
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
     const key = el.getAttribute('data-i18n-placeholder');
     el.placeholder = t(key);
@@ -110,6 +114,40 @@ function applyTranslations() {
       codeEl.textContent = 'UA';
     }
   }
+}
+
+// Theme Toggle (Light / Dark)
+let currentTheme = localStorage.getItem('agents_theme') || 'dark';
+
+function updateThemeIcons() {
+  const isDark = document.documentElement.classList.contains('dark');
+  const sunIcon = document.getElementById('theme-icon-sun');
+  const moonIcon = document.getElementById('theme-icon-moon');
+  if (sunIcon && moonIcon) {
+    if (isDark) {
+      sunIcon.classList.remove('hidden');
+      moonIcon.classList.add('hidden');
+    } else {
+      sunIcon.classList.add('hidden');
+      moonIcon.classList.remove('hidden');
+    }
+  }
+  if (window.lucide) {
+    lucide.createIcons();
+  }
+}
+
+function toggleTheme() {
+  const htmlEl = document.documentElement;
+  if (htmlEl.classList.contains('dark')) {
+    htmlEl.classList.remove('dark');
+    currentTheme = 'light';
+  } else {
+    htmlEl.classList.add('dark');
+    currentTheme = 'dark';
+  }
+  localStorage.setItem('agents_theme', currentTheme);
+  updateThemeIcons();
 }
 
 function toggleLangMenu() {
@@ -142,6 +180,7 @@ async function changeLang(lang) {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+  updateThemeIcons();
   loadI18n();
   fetchStatus();
   setInterval(() => {
@@ -350,36 +389,36 @@ function buildCardHTML(agent) {
       </span>`;
   } else {
     statusBadge = `
-      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700">
+      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
         ${t('status.stopped')}
       </span>`;
   }
 
   // Type tag
   const typeColors = {
-    daemon: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    systemd: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    docker: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-    cli: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
+    daemon: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+    systemd: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+    docker: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+    cli: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20'
   };
-  const typeClass = typeColors[agent.type] || 'bg-slate-800 text-slate-400 border-slate-700';
+  const typeClass = typeColors[agent.type] || 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700';
 
   // Metrics
   let metricsHTML = '';
   if (isRunning) {
     metricsHTML = `
-      <div class="grid grid-cols-3 gap-2 py-2 px-3 bg-slate-950/60 rounded-xl border border-slate-800/80 text-xs">
+      <div class="grid grid-cols-3 gap-2 py-2 px-3 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800/80 text-xs">
         <div>
-          <span class="text-slate-500 block text-[10px]">${t('card.memory')}</span>
-          <span class="font-mono text-slate-200">${agent.memory_mb ? agent.memory_mb.toFixed(0) + ' MB' : 'active'}</span>
+          <span class="text-slate-400 dark:text-slate-500 block text-[10px]">${t('card.memory')}</span>
+          <span class="font-mono text-slate-700 dark:text-slate-200">${agent.memory_mb ? agent.memory_mb.toFixed(0) + ' MB' : 'active'}</span>
         </div>
         <div>
-          <span class="text-slate-500 block text-[10px]">${t('card.cpu')}</span>
-          <span class="font-mono text-slate-200">${agent.cpu_percent !== null ? agent.cpu_percent + '%' : '0%'}</span>
+          <span class="text-slate-400 dark:text-slate-500 block text-[10px]">${t('card.cpu')}</span>
+          <span class="font-mono text-slate-700 dark:text-slate-200">${agent.cpu_percent !== null ? agent.cpu_percent + '%' : '0%'}</span>
         </div>
         <div>
-          <span class="text-slate-500 block text-[10px]">${t('card.uptime')}</span>
-          <span class="font-mono text-slate-200">${agent.uptime || '—'}</span>
+          <span class="text-slate-400 dark:text-slate-500 block text-[10px]">${t('card.uptime')}</span>
+          <span class="font-mono text-slate-700 dark:text-slate-200">${agent.uptime || '—'}</span>
         </div>
       </div>
     `;
@@ -390,7 +429,7 @@ function buildCardHTML(agent) {
   if (agent.port) {
     const mainUrl = agent.urls && agent.urls.length > 0 ? agent.urls[0].url : `http://localhost:${agent.port}`;
     urlButton = `
-      <a href="${mainUrl}" target="_blank" title="${t('btn.open_ui')}" class="p-2 bg-slate-800 hover:bg-blue-600/30 hover:text-blue-400 text-slate-300 rounded-lg border border-slate-700 transition flex items-center justify-center">
+      <a href="${mainUrl}" target="_blank" title="${t('btn.open_ui')}" class="p-2 bg-slate-100 hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-blue-600/30 hover:text-blue-600 dark:hover:text-blue-400 text-slate-600 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 transition flex items-center justify-center">
         <i data-lucide="external-link" class="w-4 h-4"></i>
       </a>
     `;
@@ -400,22 +439,22 @@ function buildCardHTML(agent) {
   let controlButtons = '';
   if (isCli) {
     controlButtons = `
-      <div class="text-xs text-slate-400 font-mono flex items-center space-x-1">
-        <i data-lucide="terminal" class="w-3.5 h-3.5 text-cyan-400"></i>
+      <div class="text-xs text-slate-500 dark:text-slate-400 font-mono flex items-center space-x-1">
+        <i data-lucide="terminal" class="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400"></i>
         <span>agents run ${agent.id}</span>
       </div>
     `;
   } else if (isRunning) {
     controlButtons = `
       <div class="flex items-center space-x-2 w-full">
-        <button onclick="stopAgent('${agent.id}')" class="flex-1 py-1.5 px-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-medium rounded-lg border border-rose-500/30 transition flex items-center justify-center space-x-1.5">
+        <button onclick="stopAgent('${agent.id}')" class="flex-1 py-1.5 px-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-300 text-xs font-medium rounded-lg border border-rose-500/30 transition flex items-center justify-center space-x-1.5">
           <i data-lucide="square" class="w-3.5 h-3.5"></i>
           <span>${t('btn.stop')}</span>
         </button>
-        <button onclick="restartAgent('${agent.id}')" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition" title="${t('btn.restart')}">
+        <button onclick="restartAgent('${agent.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 transition" title="${t('btn.restart')}">
           <i data-lucide="rotate-cw" class="w-4 h-4"></i>
         </button>
-        <button onclick="openLogsModal('${agent.id}')" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition" title="${t('btn.logs')}">
+        <button onclick="openLogsModal('${agent.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 transition" title="${t('btn.logs')}">
           <i data-lucide="file-text" class="w-4 h-4"></i>
         </button>
         ${urlButton}
@@ -424,11 +463,11 @@ function buildCardHTML(agent) {
   } else {
     controlButtons = `
       <div class="flex items-center space-x-2 w-full">
-        <button onclick="startAgent('${agent.id}')" class="flex-1 py-1.5 px-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-xs font-medium rounded-lg border border-emerald-500/30 transition flex items-center justify-center space-x-1.5">
+        <button onclick="startAgent('${agent.id}')" class="flex-1 py-1.5 px-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 text-xs font-medium rounded-lg border border-emerald-500/30 transition flex items-center justify-center space-x-1.5">
           <i data-lucide="play" class="w-3.5 h-3.5"></i>
           <span>${t('btn.start')}</span>
         </button>
-        <button onclick="openLogsModal('${agent.id}')" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition" title="${t('btn.logs')}">
+        <button onclick="openLogsModal('${agent.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 transition" title="${t('btn.logs')}">
           <i data-lucide="file-text" class="w-4 h-4"></i>
         </button>
         ${urlButton}
@@ -437,23 +476,23 @@ function buildCardHTML(agent) {
   }
 
   return `
-    <div class="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-4 shadow-sm transition flex flex-col justify-between space-y-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-2xl p-4 shadow-sm transition flex flex-col justify-between space-y-4">
       <div>
         <div class="flex items-start justify-between gap-2 mb-2">
           <div>
             <div class="flex items-center space-x-2">
-              <h3 class="font-bold text-white text-sm tracking-tight" title="${getAgentName(agent)}">${getAgentName(agent)}</h3>
+              <h3 class="font-bold text-slate-900 dark:text-white text-sm tracking-tight" title="${getAgentName(agent)}">${getAgentName(agent)}</h3>
               <span class="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded border ${typeClass}">${agent.type}</span>
             </div>
-            <span class="text-xs font-mono text-slate-500">ID: ${agent.id}</span>
+            <span class="text-xs font-mono text-slate-400 dark:text-slate-500">ID: ${agent.id}</span>
           </div>
           <div>${statusBadge}</div>
         </div>
-        <p class="text-xs text-slate-400 line-clamp-2 mb-3">${getAgentDesc(agent)}</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mb-3 min-h-[32px]">${getAgentDesc(agent)}</p>
         ${metricsHTML}
       </div>
 
-      <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between">
+      <div class="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
         ${controlButtons}
       </div>
     </div>
@@ -582,22 +621,22 @@ async function openScanModal() {
       container.innerHTML = candidates.map(c => {
         const isReg = c.is_registered;
         return `
-          <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between gap-3 text-xs">
+          <div class="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 text-xs">
             <div>
               <div class="flex items-center space-x-2">
-                <span class="font-bold text-white">${c.name}</span>
-                <span class="font-mono text-slate-500 text-[10px]">(${c.id})</span>
-                <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px] uppercase font-mono">${c.type}</span>
-                ${c.port ? `<span class="text-blue-400 font-mono text-[10px]">:${c.port}</span>` : ''}
+                <span class="font-bold text-slate-900 dark:text-white">${c.name}</span>
+                <span class="font-mono text-slate-400 dark:text-slate-500 text-[10px]">(${c.id})</span>
+                <span class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400 text-[10px] uppercase font-mono">${c.type}</span>
+                ${c.port ? `<span class="text-blue-500 dark:text-blue-400 font-mono text-[10px]">:${c.port}</span>` : ''}
               </div>
-              <p class="text-slate-400 text-xs mt-0.5">${c.description || '—'}</p>
-              <span class="font-mono text-[10px] text-slate-600 block mt-1">${c.working_dir || ''}</span>
+              <p class="text-slate-600 dark:text-slate-400 text-xs mt-0.5">${c.description || '—'}</p>
+              <span class="font-mono text-[10px] text-slate-400 dark:text-slate-600 block mt-1">${c.working_dir || ''}</span>
             </div>
             <div>
               ${isReg
-                ? `<span class="px-2 py-1 rounded bg-slate-800 text-slate-500 text-xs">Вже у реєстрі</span>`
-                : `<button onclick='registerFromScan(${JSON.stringify(c)})' class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition font-medium text-xs">
-                    Додати
+                ? `<span class="px-2 py-1 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs">${t('modal.scan.registered')}</span>`
+                : `<button onclick='registerFromScan(${JSON.stringify(c)})' class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition font-medium text-xs shadow-sm">
+                    ${t('btn.add')}
                   </button>`
               }
             </div>

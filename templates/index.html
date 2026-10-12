@@ -30,19 +30,32 @@
       }
     }
   </script>
+  <script>
+    // Immediate theme initialization to prevent flash
+    (function() {
+      const savedTheme = localStorage.getItem('agents_theme') || 'dark';
+      if (savedTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    })();
+  </script>
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
     .font-mono { font-family: 'JetBrains Mono', monospace; }
     .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-blue-600 selection:text-white">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col antialiased selection:bg-blue-600 selection:text-white transition-colors duration-150">
 
   <!-- Top Navbar -->
-  <header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur border-b border-slate-800">
+  <header class="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 transition-colors duration-150">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center space-x-3">
         <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 text-white font-bold text-xl">
@@ -50,94 +63,100 @@
         </div>
         <div>
           <div class="flex items-center space-x-2">
-            <h1 class="font-bold text-lg text-white tracking-tight">Agent Dispatcher</h1>
-            <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">v1.0</span>
+            <h1 class="font-bold text-lg text-slate-900 dark:text-white tracking-tight">Agent Dispatcher</h1>
+            <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">v1.0</span>
           </div>
-          <p class="text-xs text-slate-400">Централізований диспетчер мікрододатків та ШІ-агентів</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Централізований диспетчер мікрододатків та ШІ-агентів</p>
         </div>
       </div>
 
       <!-- System & GPU Stats Bar -->
       <div class="hidden md:flex items-center space-x-3">
         <!-- CPU / RAM / Host -->
-        <div class="flex items-center space-x-3 bg-slate-950/70 border border-slate-800/80 rounded-xl px-3.5 py-1.5 text-xs">
+        <div class="flex items-center space-x-3 bg-slate-100/80 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/80 rounded-xl px-3.5 py-1.5 text-xs shadow-sm">
           <div class="flex items-center space-x-1.5" title="CPU">
-            <i data-lucide="cpu" class="w-3.5 h-3.5 text-blue-400"></i>
-            <span class="text-slate-400">CPU:</span>
-            <span id="stat-cpu" class="font-mono font-medium text-slate-200">--%</span>
+            <i data-lucide="cpu" class="w-3.5 h-3.5 text-blue-500 dark:text-blue-400"></i>
+            <span class="text-slate-500 dark:text-slate-400">CPU:</span>
+            <span id="stat-cpu" class="font-mono font-medium text-slate-700 dark:text-slate-200">--%</span>
           </div>
-          <div class="w-px h-3.5 bg-slate-800"></div>
+          <div class="w-px h-3.5 bg-slate-200 dark:bg-slate-800"></div>
           <div class="flex items-center space-x-1.5" title="RAM">
-            <i data-lucide="activity" class="w-3.5 h-3.5 text-indigo-400"></i>
-            <span class="text-slate-400">RAM:</span>
-            <span id="stat-ram" class="font-mono font-medium text-slate-200">-- GB</span>
+            <i data-lucide="activity" class="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400"></i>
+            <span class="text-slate-500 dark:text-slate-400">RAM:</span>
+            <span id="stat-ram" class="font-mono font-medium text-slate-700 dark:text-slate-200">-- GB</span>
           </div>
-          <div class="w-px h-3.5 bg-slate-800"></div>
+          <div class="w-px h-3.5 bg-slate-200 dark:bg-slate-800"></div>
           <div class="flex items-center space-x-1.5" title="Хост">
             <i data-lucide="server" class="w-3.5 h-3.5 text-slate-400"></i>
-            <span id="stat-host" class="font-mono text-slate-300">host</span>
+            <span id="stat-host" class="font-mono text-slate-600 dark:text-slate-300">host</span>
           </div>
         </div>
 
         <!-- GPU Monitor: 3 Основних Параметри (Завантаження, VRAM, Температура) -->
-        <div id="gpu-monitor-bar" class="flex items-center space-x-3 bg-gradient-to-r from-emerald-950/40 via-slate-950/80 to-slate-950/70 border border-emerald-500/30 rounded-xl px-3.5 py-1.5 text-xs shadow-sm shadow-emerald-950/20" title="NVIDIA GPU">
+        <div id="gpu-monitor-bar" class="flex items-center space-x-3 bg-gradient-to-r from-emerald-500/10 via-slate-100 to-slate-100 dark:from-emerald-950/40 dark:via-slate-950/80 dark:to-slate-950/70 border border-emerald-500/30 rounded-xl px-3.5 py-1.5 text-xs shadow-sm" title="NVIDIA GPU">
           <!-- Параметр 1: Завантаження ядра GPU -->
           <div class="flex items-center space-x-1.5" title="Завантаження GPU ядра">
             <span class="relative flex h-2 w-2">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <span class="text-emerald-400 font-bold uppercase text-[10px] tracking-wide">GPU:</span>
-            <span id="stat-gpu-load" class="font-mono font-bold text-emerald-300">--%</span>
+            <span class="text-emerald-600 dark:text-emerald-400 font-bold uppercase text-[10px] tracking-wide">GPU:</span>
+            <span id="stat-gpu-load" class="font-mono font-bold text-emerald-600 dark:text-emerald-300">--%</span>
           </div>
-          <div class="w-px h-3.5 bg-slate-800"></div>
+          <div class="w-px h-3.5 bg-slate-200 dark:bg-slate-800"></div>
           <!-- Параметр 2: Використання відеопам'яті (VRAM) -->
           <div class="flex items-center space-x-1.5" title="Відеопам'ять (VRAM)">
-            <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-cyan-400"></i>
-            <span class="text-slate-400">VRAM:</span>
-            <span id="stat-gpu-vram" class="font-mono font-medium text-cyan-300">-- / -- GB</span>
+            <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400"></i>
+            <span class="text-slate-500 dark:text-slate-400">VRAM:</span>
+            <span id="stat-gpu-vram" class="font-mono font-medium text-cyan-600 dark:text-cyan-300">-- / -- GB</span>
           </div>
-          <div class="w-px h-3.5 bg-slate-800"></div>
+          <div class="w-px h-3.5 bg-slate-200 dark:bg-slate-800"></div>
           <!-- Параметр 3: Температура відеокарти -->
           <div class="flex items-center space-x-1.5" title="Температура GPU">
-            <i data-lucide="thermometer" class="w-3.5 h-3.5 text-amber-400"></i>
-            <span class="text-slate-400">Temp:</span>
-            <span id="stat-gpu-temp" class="font-mono font-medium text-amber-300">--°C</span>
+            <i data-lucide="thermometer" class="w-3.5 h-3.5 text-amber-500 dark:text-amber-400"></i>
+            <span class="text-slate-500 dark:text-slate-400">Temp:</span>
+            <span id="stat-gpu-temp" class="font-mono font-medium text-amber-600 dark:text-amber-300">--°C</span>
           </div>
         </div>
       </div>
 
       <!-- Header Action Buttons -->
       <div class="flex items-center space-x-2">
+        <!-- Theme Toggle (Light / Dark) -->
+        <button onclick="toggleTheme()" id="theme-toggle-btn" class="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 transition flex items-center justify-center shadow-sm" title="Перемкнути тему" data-i18n-title="btn.theme">
+          <i data-lucide="sun" id="theme-icon-sun" class="w-4 h-4 text-amber-500 hidden"></i>
+          <i data-lucide="moon" id="theme-icon-moon" class="w-4 h-4 text-slate-400 hidden"></i>
+        </button>
+
         <!-- Language Switcher -->
         <div class="relative inline-block text-left" id="lang-dropdown-wrapper">
-          <button onclick="toggleLangMenu()" id="current-lang-btn" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg border border-slate-700 transition flex items-center space-x-1.5">
+          <button onclick="toggleLangMenu()" id="current-lang-btn" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 transition flex items-center space-x-1.5 shadow-sm">
             <span id="current-lang-flag">🇺🇦</span>
             <span id="current-lang-code" class="font-mono">UA</span>
             <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
           </button>
-          <div id="lang-menu" class="hidden absolute right-0 mt-1 w-32 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl py-1 z-50 text-xs">
-            <button onclick="changeLang('uk')" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 flex items-center space-x-2 text-slate-200">
+          <div id="lang-menu" class="hidden absolute right-0 mt-1 w-32 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl py-1 z-50 text-xs">
+            <button onclick="changeLang('uk')" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center space-x-2 text-slate-700 dark:text-slate-200">
               <span>🇺🇦</span> <span>Українська</span>
             </button>
-            <button onclick="changeLang('en')" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 flex items-center space-x-2 text-slate-200">
+            <button onclick="changeLang('en')" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center space-x-2 text-slate-700 dark:text-slate-200">
               <span>🇬🇧</span> <span>English</span>
             </button>
-            <button onclick="changeLang('ru')" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 flex items-center space-x-2 text-slate-200">
+            <button onclick="changeLang('ru')" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center space-x-2 text-slate-700 dark:text-slate-200">
               <span>🌐</span> <span>Русский</span>
             </button>
           </div>
         </div>
 
-        <button onclick="openScanModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-slate-700 transition flex items-center space-x-1.5 shadow-sm">
-          <i data-lucide="scan" class="w-3.5 h-3.5 text-blue-400"></i>
+        <button onclick="openScanModal()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 transition flex items-center space-x-1.5 shadow-sm">
+          <i data-lucide="scan" class="w-3.5 h-3.5 text-blue-500 dark:text-blue-400"></i>
           <span class="hidden sm:inline" data-i18n="btn.scan">Сканувати</span>
         </button>
         <button onclick="openAddModal()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded-lg transition flex items-center space-x-1.5 shadow-sm shadow-blue-600/30">
           <i data-lucide="plus" class="w-3.5 h-3.5"></i>
           <span data-i18n="btn.add">Додати</span>
         </button>
-        <button onclick="fetchStatus(true)" id="refresh-btn" title="Оновити стан" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition">
+        <button onclick="fetchStatus(true)" id="refresh-btn" title="Оновити стан" class="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 transition shadow-sm">
           <i data-lucide="refresh-cw" class="w-4 h-4"></i>
         </button>
       </div>
@@ -150,17 +169,17 @@
     <!-- Overview Bar & Batch Actions -->
     <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-6">
       <!-- Tabs / Filters -->
-      <div class="flex items-center space-x-1 bg-slate-900 border border-slate-800 rounded-xl p-1 text-xs overflow-x-auto">
-        <button onclick="setFilter('all')" class="tab-btn active px-3 py-1.5 rounded-lg font-medium transition text-white bg-blue-600" data-tab="all">
+      <div class="flex items-center space-x-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1 text-xs overflow-x-auto shadow-sm">
+        <button onclick="setFilter('all')" class="tab-btn active px-3 py-1.5 rounded-lg font-medium transition text-white bg-blue-600 shadow-sm shadow-blue-500/20" data-tab="all">
           <span data-i18n="tab.all">Всі</span> (<span id="count-all">0</span>)
         </button>
-        <button onclick="setFilter('running')" class="tab-btn px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white" data-tab="running">
+        <button onclick="setFilter('running')" class="tab-btn px-3 py-1.5 rounded-lg font-medium transition text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white" data-tab="running">
           <span data-i18n="tab.running">🟢 Активні</span> (<span id="count-running">0</span>)
         </button>
-        <button onclick="setFilter('web_app')" class="tab-btn px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white" data-tab="web_app">
+        <button onclick="setFilter('web_app')" class="tab-btn px-3 py-1.5 rounded-lg font-medium transition text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white" data-tab="web_app">
           <span data-i18n="tab.web">🌐 Веб-додатки</span>
         </button>
-        <button onclick="setFilter('cli')" class="tab-btn px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white" data-tab="cli">
+        <button onclick="setFilter('cli')" class="tab-btn px-3 py-1.5 rounded-lg font-medium transition text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white" data-tab="cli">
           <span data-i18n="tab.cli">⚡ CLI Агенти</span>
         </button>
       </div>
@@ -169,13 +188,13 @@
       <div class="flex items-center space-x-3">
         <div class="relative flex-1 sm:w-64">
           <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-          <input type="text" id="search-input" oninput="onSearchChange()" placeholder="Пошук агента..." class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+          <input type="text" id="search-input" oninput="onSearchChange()" placeholder="Пошук агента..." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm">
         </div>
-        <button onclick="batchAction('start_all')" title="Запустити всі сервіси" class="px-2.5 py-1.5 bg-slate-800 hover:bg-emerald-900/40 text-emerald-400 hover:text-emerald-300 text-xs font-medium rounded-lg border border-slate-700 hover:border-emerald-700/50 transition flex items-center space-x-1">
+        <button onclick="batchAction('start_all')" title="Запустити всі сервіси" class="px-2.5 py-1.5 bg-white hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 hover:border-emerald-500/30 transition flex items-center space-x-1 shadow-sm">
           <i data-lucide="play" class="w-3.5 h-3.5"></i>
           <span class="hidden md:inline" data-i18n="btn.start_all">Старт всі</span>
         </button>
-        <button onclick="batchAction('stop_all')" title="Зупинити всі сервіси" class="px-2.5 py-1.5 bg-slate-800 hover:bg-red-900/40 text-red-400 hover:text-red-300 text-xs font-medium rounded-lg border border-slate-700 hover:border-red-700/50 transition flex items-center space-x-1">
+        <button onclick="batchAction('stop_all')" title="Зупинити всі сервіси" class="px-2.5 py-1.5 bg-white hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-red-900/40 text-rose-600 dark:text-red-400 hover:text-rose-700 dark:hover:text-red-300 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 hover:border-rose-500/30 transition flex items-center space-x-1 shadow-sm">
           <i data-lucide="square" class="w-3.5 h-3.5"></i>
           <span class="hidden md:inline" data-i18n="btn.stop_all">Стоп всі</span>
         </button>
@@ -185,7 +204,7 @@
     <!-- Agent Cards Grid -->
     <div id="agents-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <!-- Loading Skeleton -->
-      <div class="col-span-full py-16 text-center text-slate-500 flex flex-col items-center">
+      <div class="col-span-full py-16 text-center text-slate-400 dark:text-slate-500 flex flex-col items-center">
         <i data-lucide="loader-2" class="w-8 h-8 animate-spin text-blue-500 mb-3"></i>
         <p class="text-sm">Завантаження стану агентів...</p>
       </div>
@@ -193,23 +212,23 @@
   </main>
 
   <!-- Modal: Live Logs -->
-  <div id="modal-logs" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
-      <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+  <div id="modal-logs" class="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
         <div class="flex items-center space-x-2">
-          <i data-lucide="terminal" class="w-5 h-5 text-blue-400"></i>
-          <h3 id="modal-logs-title" class="font-semibold text-white text-sm">Логи агента</h3>
+          <i data-lucide="terminal" class="w-5 h-5 text-blue-500 dark:text-blue-400"></i>
+          <h3 id="modal-logs-title" class="font-semibold text-slate-900 dark:text-white text-sm">Логи агента</h3>
         </div>
         <div class="flex items-center space-x-2">
-          <select id="logs-line-count" onchange="fetchLogs(currentLogAgentId)" class="bg-slate-950 border border-slate-800 rounded-lg text-xs px-2 py-1 text-slate-300">
+          <select id="logs-line-count" onchange="fetchLogs(currentLogAgentId)" class="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs px-2 py-1 text-slate-700 dark:text-slate-300">
             <option value="50">50 рядків</option>
             <option value="100">100 рядків</option>
             <option value="250">250 рядків</option>
           </select>
-          <button onclick="fetchLogs(currentLogAgentId)" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition" title="Оновити">
+          <button onclick="fetchLogs(currentLogAgentId)" class="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg transition" title="Оновити">
             <i data-lucide="refresh-cw" class="w-4 h-4"></i>
           </button>
-          <button onclick="closeModal('modal-logs')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg transition">
+          <button onclick="closeModal('modal-logs')" class="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg transition">
             <i data-lucide="x" class="w-4 h-4"></i>
           </button>
         </div>
@@ -221,19 +240,19 @@
   </div>
 
   <!-- Modal: Discovery Scan -->
-  <div id="modal-scan" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
-      <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+  <div id="modal-scan" class="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
         <div class="flex items-center space-x-2">
-          <i data-lucide="scan" class="w-5 h-5 text-blue-400"></i>
-          <h3 class="font-semibold text-white text-sm">Сканування системи на наявність мікрододатків</h3>
+          <i data-lucide="scan" class="w-5 h-5 text-blue-500 dark:text-blue-400"></i>
+          <h3 class="font-semibold text-slate-900 dark:text-white text-sm">Сканування системи на наявність мікрододатків</h3>
         </div>
-        <button onclick="closeModal('modal-scan')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg transition">
+        <button onclick="closeModal('modal-scan')" class="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg transition">
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
       <div class="p-4 flex-1 overflow-y-auto space-y-3 custom-scrollbar" id="scan-results-container">
-        <div class="text-center py-8 text-slate-500">
+        <div class="text-center py-8 text-slate-400 dark:text-slate-500">
           <i data-lucide="loader-2" class="w-6 h-6 animate-spin text-blue-500 mx-auto mb-2"></i>
           Пошук мікрододатків у системних директоріях...
         </div>
@@ -242,34 +261,34 @@
   </div>
 
   <!-- Modal: Add Custom Agent -->
-  <div id="modal-add" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
-      <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+  <div id="modal-add" class="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+      <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
         <div class="flex items-center space-x-2">
-          <i data-lucide="plus-circle" class="w-5 h-5 text-blue-400"></i>
-          <h3 class="font-semibold text-white text-sm">Додати новий мікрододаток</h3>
+          <i data-lucide="plus-circle" class="w-5 h-5 text-blue-500 dark:text-blue-400"></i>
+          <h3 class="font-semibold text-slate-900 dark:text-white text-sm">Додати новий мікрододаток</h3>
         </div>
-        <button onclick="closeModal('modal-add')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg transition">
+        <button onclick="closeModal('modal-add')" class="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg transition">
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
       <form id="add-agent-form" onsubmit="submitAddAgent(event)" class="p-4 space-y-3">
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">ID агента (slug)*</label>
-          <input type="text" id="add-id" required placeholder="my-service" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
+          <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">ID агента (slug)*</label>
+          <input type="text" id="add-id" required placeholder="my-service" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500">
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Назва*</label>
-          <input type="text" id="add-name" required placeholder="My Service Name" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
+          <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Назва*</label>
+          <input type="text" id="add-name" required placeholder="My Service Name" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500">
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Опис</label>
-          <input type="text" id="add-desc" placeholder="Короткий опис функціоналу" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
+          <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Опис</label>
+          <input type="text" id="add-desc" placeholder="Короткий опис функціоналу" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500">
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">Тип запуску</label>
-            <select id="add-type" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
+            <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Тип запуску</label>
+            <select id="add-type" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500">
               <option value="daemon">daemon (фоновий процес)</option>
               <option value="systemd">systemd юніт</option>
               <option value="cli">cli інструмент</option>
@@ -277,21 +296,21 @@
             </select>
           </div>
           <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">Порт (якщо веб)</label>
-            <input type="number" id="add-port" placeholder="8000" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
+            <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Порт (якщо веб)</label>
+            <input type="number" id="add-port" placeholder="8000" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500">
           </div>
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Робочий каталог (working dir)</label>
-          <input type="text" id="add-dir" placeholder="/path/to/projects/..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
+          <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Робочий каталог (working dir)</label>
+          <input type="text" id="add-dir" placeholder="/path/to/projects/..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500">
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Команда запуску (start_cmd)</label>
-          <input type="text" id="add-cmd" placeholder="python app.py або ./run.sh start" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
+          <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Команда запуску (start_cmd)</label>
+          <input type="text" id="add-cmd" placeholder="python app.py або ./run.sh start" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500">
         </div>
-        <div class="pt-3 border-t border-slate-800 flex justify-end space-x-2">
-          <button type="button" onclick="closeModal('modal-add')" class="px-3 py-1.5 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 transition">Скасувати</button>
-          <button type="submit" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-500 transition">Зберегти</button>
+        <div class="pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-end space-x-2">
+          <button type="button" onclick="closeModal('modal-add')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs rounded-lg transition">Скасувати</button>
+          <button type="submit" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-500 transition shadow-sm">Зберегти</button>
         </div>
       </form>
     </div>
