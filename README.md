@@ -136,3 +136,9 @@ agents web --port 8800
 - Логи диспетчера: `~/.local/state/agent_dispatcher/logs/`
 
 Ви можете редагувати `agents.json` вручну або через команди `agents add` / `agents remove`.
+
+---
+
+## 📄 Ліцензія
+
+Проєкт поширюється за ліцензією [MIT](LICENSE).
