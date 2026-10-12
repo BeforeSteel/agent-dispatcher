@@ -94,6 +94,23 @@ def create_app(manager: AgentManager = None) -> Flask:
     def api_system():
         return jsonify(get_system_stats())
 
+    @app.route("/api/i18n")
+    def api_i18n():
+        from .i18n import get_all_translations, get_current_lang
+        return jsonify({
+            "current": get_current_lang(),
+            "translations": get_all_translations()
+        })
+
+    @app.route("/api/lang", methods=["POST"])
+    def api_lang():
+        from .config import save_settings
+        lang = (request.json or {}).get("lang", "uk")
+        settings = manager.settings
+        settings["lang"] = lang
+        save_settings(settings)
+        return jsonify({"ok": True, "lang": lang})
+
     @app.route("/api/batch/<action>", methods=["POST"])
     def api_batch(action):
         results = []

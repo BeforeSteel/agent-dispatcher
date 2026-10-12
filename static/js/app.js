@@ -1,12 +1,126 @@
-// Agent Dispatcher - Frontend Logic
+// Agent Dispatcher - Frontend Logic & i18n
 
 let agentsData = [];
 let currentFilter = 'all';
 let searchQuery = '';
 let currentLogAgentId = null;
+let currentLang = localStorage.getItem('agents_lang') || 'uk';
+let i18nDict = {};
+
+// Fallback translations if API fails
+const fallbackI18n = {
+  uk: {
+    "status.running": "Працює", "status.stopped": "Зупинено", "status.ready": "CLI Ready", "status.failed": "Помилка",
+    "card.memory": "Пам'ять", "card.cpu": "CPU", "card.uptime": "Аптайм",
+    "btn.start": "Запустити", "btn.stop": "Стоп", "btn.restart": "Перезапустити", "btn.logs": "Логи", "btn.open_ui": "Відкрити інтерфейс",
+    "btn.scan": "Сканувати", "btn.add": "Додати", "btn.start_all": "Старт всі", "btn.stop_all": "Стоп всі",
+    "tab.all": "Всі", "tab.running": "🟢 Активні", "tab.web": "🌐 Веб-додатки", "tab.cli": "⚡ CLI Агенти",
+    "search.placeholder": "Пошук агента..."
+  },
+  en: {
+    "status.running": "Running", "status.stopped": "Stopped", "status.ready": "CLI Ready", "status.failed": "Failed",
+    "card.memory": "Memory", "card.cpu": "CPU", "card.uptime": "Uptime",
+    "btn.start": "Start", "btn.stop": "Stop", "btn.restart": "Restart", "btn.logs": "Logs", "btn.open_ui": "Open Web UI",
+    "btn.scan": "Scan", "btn.add": "Add Agent", "btn.start_all": "Start All", "btn.stop_all": "Stop All",
+    "tab.all": "All", "tab.running": "🟢 Running", "tab.web": "🌐 Web Apps", "tab.cli": "⚡ CLI Agents",
+    "search.placeholder": "Search agent..."
+  },
+  ru: {
+    "status.running": "Работает", "status.stopped": "Остановлен", "status.ready": "CLI Ready", "status.failed": "Ошибка",
+    "card.memory": "Память", "card.cpu": "CPU", "card.uptime": "Аптайм",
+    "btn.start": "Запустить", "btn.stop": "Стоп", "btn.restart": "Перезапуск", "btn.logs": "Логи", "btn.open_ui": "Открыть интерфейс",
+    "btn.scan": "Сканировать", "btn.add": "Добавить", "btn.start_all": "Старт все", "btn.stop_all": "Стоп все",
+    "tab.all": "Все", "tab.running": "🟢 Активные", "tab.web": "🌐 Веб-приложения", "tab.cli": "⚡ CLI Агенты",
+    "search.placeholder": "Поиск агента..."
+  }
+};
+
+function t(key) {
+  if (i18nDict[currentLang] && i18nDict[currentLang][key]) {
+    return i18nDict[currentLang][key];
+  }
+  if (fallbackI18n[currentLang] && fallbackI18n[currentLang][key]) {
+    return fallbackI18n[currentLang][key];
+  }
+  if (fallbackI18n['uk'] && fallbackI18n['uk'][key]) {
+    return fallbackI18n['uk'][key];
+  }
+  return key;
+}
+
+async function loadI18n() {
+  try {
+    const res = await fetch('/api/i18n');
+    const data = await res.json();
+    if (data.translations) {
+      i18nDict = data.translations;
+    }
+    if (!localStorage.getItem('agents_lang') && data.current) {
+      currentLang = data.current;
+    }
+  } catch (e) {
+    console.warn('Using fallback i18n:', e);
+  }
+  applyTranslations();
+}
+
+function applyTranslations() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    el.textContent = t(key);
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    el.placeholder = t(key);
+  });
+
+  const flagEl = document.getElementById('current-lang-flag');
+  const codeEl = document.getElementById('current-lang-code');
+  if (flagEl && codeEl) {
+    if (currentLang === 'en') {
+      flagEl.textContent = '🇬🇧';
+      codeEl.textContent = 'EN';
+    } else if (currentLang === 'ru') {
+      flagEl.textContent = '🌐';
+      codeEl.textContent = 'RU';
+    } else {
+      flagEl.textContent = '🇺🇦';
+      codeEl.textContent = 'UA';
+    }
+  }
+}
+
+function toggleLangMenu() {
+  const menu = document.getElementById('lang-menu');
+  if (menu) menu.classList.toggle('hidden');
+}
+
+document.addEventListener('click', (e) => {
+  const wrapper = document.getElementById('lang-dropdown-wrapper');
+  const menu = document.getElementById('lang-menu');
+  if (wrapper && menu && !wrapper.contains(e.target)) {
+    menu.classList.add('hidden');
+  }
+});
+
+async function changeLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('agents_lang', lang);
+  toggleLangMenu();
+  applyTranslations();
+  renderCards();
+  try {
+    await fetch('/api/lang', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lang: lang })
+    });
+  } catch (e) {}
+}
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+  loadI18n();
   fetchStatus();
   setInterval(() => {
     fetchStatus(false);
@@ -199,23 +313,23 @@ function buildCardHTML(agent) {
     statusBadge = `
       <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
         <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-1.5"></span>
-        Працює
+        ${t('status.running')}
       </span>`;
   } else if (isCli) {
     statusBadge = `
       <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
         <i data-lucide="zap" class="w-3 h-3 mr-1"></i>
-        CLI Ready
+        ${t('status.ready')}
       </span>`;
   } else if (agent.status === 'FAILED') {
     statusBadge = `
       <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
-        Помилка
+        ${t('status.failed')}
       </span>`;
   } else {
     statusBadge = `
       <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700">
-        Зупинено
+        ${t('status.stopped')}
       </span>`;
   }
 
@@ -234,15 +348,15 @@ function buildCardHTML(agent) {
     metricsHTML = `
       <div class="grid grid-cols-3 gap-2 py-2 px-3 bg-slate-950/60 rounded-xl border border-slate-800/80 text-xs">
         <div>
-          <span class="text-slate-500 block text-[10px]">Пам'ять</span>
+          <span class="text-slate-500 block text-[10px]">${t('card.memory')}</span>
           <span class="font-mono text-slate-200">${agent.memory_mb ? agent.memory_mb.toFixed(0) + ' MB' : 'active'}</span>
         </div>
         <div>
-          <span class="text-slate-500 block text-[10px]">CPU</span>
+          <span class="text-slate-500 block text-[10px]">${t('card.cpu')}</span>
           <span class="font-mono text-slate-200">${agent.cpu_percent !== null ? agent.cpu_percent + '%' : '0%'}</span>
         </div>
         <div>
-          <span class="text-slate-500 block text-[10px]">Аптайм</span>
+          <span class="text-slate-500 block text-[10px]">${t('card.uptime')}</span>
           <span class="font-mono text-slate-200">${agent.uptime || '—'}</span>
         </div>
       </div>
@@ -254,7 +368,7 @@ function buildCardHTML(agent) {
   if (agent.port) {
     const mainUrl = agent.urls && agent.urls.length > 0 ? agent.urls[0].url : `http://localhost:${agent.port}`;
     urlButton = `
-      <a href="${mainUrl}" target="_blank" title="Відкрити інтерфейс" class="p-2 bg-slate-800 hover:bg-blue-600/30 hover:text-blue-400 text-slate-300 rounded-lg border border-slate-700 transition flex items-center justify-center">
+      <a href="${mainUrl}" target="_blank" title="${t('btn.open_ui')}" class="p-2 bg-slate-800 hover:bg-blue-600/30 hover:text-blue-400 text-slate-300 rounded-lg border border-slate-700 transition flex items-center justify-center">
         <i data-lucide="external-link" class="w-4 h-4"></i>
       </a>
     `;
@@ -274,12 +388,12 @@ function buildCardHTML(agent) {
       <div class="flex items-center space-x-2 w-full">
         <button onclick="stopAgent('${agent.id}')" class="flex-1 py-1.5 px-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-medium rounded-lg border border-rose-500/30 transition flex items-center justify-center space-x-1.5">
           <i data-lucide="square" class="w-3.5 h-3.5"></i>
-          <span>Стоп</span>
+          <span>${t('btn.stop')}</span>
         </button>
-        <button onclick="restartAgent('${agent.id}')" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition" title="Перезапустити">
+        <button onclick="restartAgent('${agent.id}')" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition" title="${t('btn.restart')}">
           <i data-lucide="rotate-cw" class="w-4 h-4"></i>
         </button>
-        <button onclick="openLogsModal('${agent.id}')" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition" title="Логи">
+        <button onclick="openLogsModal('${agent.id}')" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition" title="${t('btn.logs')}">
           <i data-lucide="file-text" class="w-4 h-4"></i>
         </button>
         ${urlButton}
@@ -290,9 +404,9 @@ function buildCardHTML(agent) {
       <div class="flex items-center space-x-2 w-full">
         <button onclick="startAgent('${agent.id}')" class="flex-1 py-1.5 px-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-xs font-medium rounded-lg border border-emerald-500/30 transition flex items-center justify-center space-x-1.5">
           <i data-lucide="play" class="w-3.5 h-3.5"></i>
-          <span>Запустити</span>
+          <span>${t('btn.start')}</span>
         </button>
-        <button onclick="openLogsModal('${agent.id}')" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition" title="Логи">
+        <button onclick="openLogsModal('${agent.id}')" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition" title="${t('btn.logs')}">
           <i data-lucide="file-text" class="w-4 h-4"></i>
         </button>
         ${urlButton}

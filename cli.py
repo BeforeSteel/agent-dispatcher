@@ -15,6 +15,7 @@ sys.path.insert(0, str(BASE_DIR))
 
 from dispatcher.manager import AgentManager
 from dispatcher.system_info import get_system_stats, get_network_ips
+from dispatcher.i18n import t, get_current_lang, SUPPORTED_LANGUAGES
 
 # Terminal Colors
 C_RESET = "\033[0m"
@@ -36,6 +37,7 @@ def print_header(title: str):
 def cmd_list(manager: AgentManager, args):
     """Display table of all agents and their live status."""
     statuses = manager.list_all_status()
+    lang = getattr(args, "lang", None) or get_current_lang()
     if not statuses:
         print(f"\n{C_YELLOW}Реєстр порожній. Виконайте `agents scan` для пошуку додатків.{C_RESET}\n")
         return
@@ -45,9 +47,23 @@ def cmd_list(manager: AgentManager, args):
     ready_count = sum(1 for s in statuses if s.status == "READY")
     total_count = len(statuses)
 
-    print(f"\n{C_BOLD}⬡ Диспетчер Агентів{C_RESET} {C_DIM}({running_count} активних · {ready_count} CLI · всього {total_count}){C_RESET}")
+    header_title = t("cli.header", lang=lang)
+    w_active = t("cli.active_agents", lang=lang)
+    w_cli = t("cli.cli_tools", lang=lang)
+    w_total = t("cli.total", lang=lang)
+
+    print(f"\n{C_BOLD}⬡ {header_title}{C_RESET} {C_DIM}({running_count} {w_active} · {ready_count} {w_cli} · {w_total} {total_count}){C_RESET}")
     print(f"{C_DIM}{'═' * 84}{C_RESET}")
-    print(f"{C_BOLD}{C_BLUE}{'СТАН':<4} {'ID':<16} {'НАЗВА':<22} {'ТИП':<10} {'ПОРТ':<8} {'PID':<8} {'РЕСУРСИ':<14}{C_RESET}")
+
+    c_stat = t("cli.col.status", lang=lang)
+    c_id = t("cli.col.id", lang=lang)
+    c_name = t("cli.col.name", lang=lang)
+    c_type = t("cli.col.type", lang=lang)
+    c_port = t("cli.col.port", lang=lang)
+    c_pid = t("cli.col.pid", lang=lang)
+    c_res = t("cli.col.res", lang=lang)
+
+    print(f"{C_BOLD}{C_BLUE}{c_stat:<5} {c_id:<16} {c_name:<22} {c_type:<10} {c_port:<8} {c_pid:<8} {c_res:<14}{C_RESET}")
     print(f"{C_DIM}{'─' * 84}{C_RESET}")
 
     for s in sorted(statuses, key=lambda x: (not x.is_running, x.status != "READY", x.id)):
@@ -78,11 +94,12 @@ def cmd_list(manager: AgentManager, args):
         print(f" {icon_str}  {id_fmt} {name_fmt} {type_fmt} {port_fmt} {pid_fmt} {res_fmt}")
 
     print(f"{C_DIM}{'─' * 84}{C_RESET}")
-    print(f"{C_DIM}Команди: `agents start <id>`, `agents stop <id>`, `agents logs <id>`, `agents open <id>`{C_RESET}\n")
+    print(f"{C_DIM}{t('cli.commands_hint', lang=lang)}{C_RESET}\n")
 
 
 def cmd_status(manager: AgentManager, args):
     """Detailed status inspection of an agent."""
+    lang = getattr(args, "lang", None) or get_current_lang()
     if not args.agent_id:
         cmd_list(manager, args)
         return
@@ -93,47 +110,48 @@ def cmd_status(manager: AgentManager, args):
         print(f"{C_RED}❌ Агента '{args.agent_id}' не знайдено в реєстрі.{C_RESET}")
         return
 
-    print_header(f"Статус агента: {agent.name} ({agent.id})")
-    print(f"  {C_BOLD}Опис:{C_RESET}        {agent.description or '—'}")
-    print(f"  {C_BOLD}Категорія:{C_RESET}   {agent.category}  |  {C_BOLD}Тип:{C_RESET} {agent.type}")
+    title_txt = t("cli.status_agent", lang=lang)
+    print_header(f"{title_txt}: {agent.name} ({agent.id})")
+    print(f"  {C_BOLD}{t('cli.description', lang=lang)}:{C_RESET}        {agent.description or '—'}")
+    print(f"  {C_BOLD}{t('cli.category', lang=lang)}:{C_RESET}   {agent.category}  |  {C_BOLD}{t('cli.col.type', lang=lang)}:{C_RESET} {agent.type}")
 
     if st.status == "RUNNING":
-        status_line = f"{C_GREEN}🟢 ПРАЦЮЄ (RUNNING){C_RESET}"
+        status_line = f"{C_GREEN}🟢 {t('cli.running_state', lang=lang)}{C_RESET}"
     elif st.status == "READY":
-        status_line = f"{C_CYAN}⚡ ГОТОВИЙ ДО ЗАПУСКУ (CLI READY){C_RESET}"
+        status_line = f"{C_CYAN}⚡ {t('cli.ready_state', lang=lang)}{C_RESET}"
     elif st.status == "FAILED":
-        status_line = f"{C_RED}🔴 ПОМИЛКА (FAILED){C_RESET}"
+        status_line = f"{C_RED}🔴 {t('cli.failed_state', lang=lang)}{C_RESET}"
     else:
-        status_line = f"{C_YELLOW}⚪ ЗУПИНЕНО (STOPPED){C_RESET}"
-    print(f"  {C_BOLD}Статус:{C_RESET}      {status_line}")
+        status_line = f"{C_YELLOW}⚪ {t('cli.stopped_state', lang=lang)}{C_RESET}"
+    print(f"  {C_BOLD}{t('cli.col.status', lang=lang)}:{C_RESET}      {status_line}")
 
     if st.pid:
-        print(f"  {C_BOLD}PID:{C_RESET}         {st.pid}")
+        print(f"  {C_BOLD}{t('cli.col.pid', lang=lang)}:{C_RESET}         {st.pid}")
     if st.uptime:
-        print(f"  {C_BOLD}Аптайм:{C_RESET}      {st.uptime}")
+        print(f"  {C_BOLD}{t('card.uptime', lang=lang)}:{C_RESET}      {st.uptime}")
     if st.memory_mb is not None:
-        print(f"  {C_BOLD}Пам'ять:{C_RESET}     {st.memory_mb:.1f} MB (RSS)")
+        print(f"  {C_BOLD}{t('card.memory', lang=lang)}:{C_RESET}     {st.memory_mb:.1f} MB (RSS)")
     if st.cpu_percent is not None:
-        print(f"  {C_BOLD}CPU:{C_RESET}         {st.cpu_percent:.1f}%")
+        print(f"  {C_BOLD}{t('card.cpu', lang=lang)}:{C_RESET}         {st.cpu_percent:.1f}%")
 
     if agent.port:
-        port_state = f"{C_GREEN}Слухає з'єднання{C_RESET}" if st.port_listening else f"{C_DIM}Неактивний{C_RESET}"
-        print(f"  {C_BOLD}Порт:{C_RESET}        {agent.port} ({port_state})")
+        port_state = f"{C_GREEN}Active{C_RESET}" if st.port_listening else f"{C_DIM}Inactive{C_RESET}"
+        print(f"  {C_BOLD}{t('cli.port', lang=lang)}:{C_RESET}        {agent.port} ({port_state})")
 
     if st.urls:
-        print(f"  {C_BOLD}Веб-адреси:{C_RESET}")
+        print(f"  {C_BOLD}{t('cli.urls', lang=lang)}:{C_RESET}")
         for u in st.urls:
             print(f"               • {u['label']:<16} {C_CYAN}{u['url']}{C_RESET}")
 
     if agent.working_dir:
-        print(f"  {C_BOLD}Каталог:{C_RESET}     {agent.working_dir}")
+        print(f"  {C_BOLD}{t('cli.dir', lang=lang)}:{C_RESET}     {agent.working_dir}")
     if agent.venv_path:
         print(f"  {C_BOLD}Virtualenv:{C_RESET}  {agent.venv_path}")
 
     log_path = manager.get_log_file(agent)
     if log_path.exists():
-        print(f"  {C_BOLD}Файл логів:{C_RESET}  {log_path}")
-        print(f"\n  {C_BOLD}{C_BLUE}Останні рядки логу:{C_RESET}")
+        print(f"  {C_BOLD}{t('cli.log_file', lang=lang)}:{C_RESET}  {log_path}")
+        print(f"\n  {C_BOLD}{C_BLUE}{t('cli.recent_logs', lang=lang)}:{C_RESET}")
         print(f"  {C_DIM}{'┄' * 70}{C_RESET}")
         recent_logs = manager.get_logs(args.agent_id, lines=8)
         for line in recent_logs:
@@ -359,6 +377,28 @@ def cmd_health(manager: AgentManager, args):
     print()
 
 
+def cmd_lang(manager: AgentManager, args):
+    """View or set interface language."""
+    from dispatcher.config import save_settings
+
+    if not getattr(args, "code", None):
+        cur = get_current_lang()
+        print(f"\n🌍 Поточна мова / Current language: {C_BOLD}{C_CYAN}{cur.upper()}{C_RESET}")
+        print(f"   Підтримуються / Supported: {', '.join(SUPPORTED_LANGUAGES)}")
+        print(f"   Змінити / Switch: {C_YELLOW}agents lang <uk|en|ru>{C_RESET}\n")
+        return
+
+    code = args.code.lower()
+    if code not in SUPPORTED_LANGUAGES:
+        print(f"{C_RED}❌ Непідтримувана мова: {code}. Доступні: {', '.join(SUPPORTED_LANGUAGES)}{C_RESET}")
+        return
+
+    settings = manager.settings
+    settings["lang"] = code
+    save_settings(settings)
+    print(f"{C_GREEN}✅ Мову інтерфейсу змінено на {code.upper()}!{C_RESET}\n")
+
+
 def cmd_web(manager: AgentManager, args):
     """Start the Web Dashboard interface."""
     from dispatcher.web_server import run_web_dashboard
@@ -372,7 +412,12 @@ def build_parser() -> argparse.ArgumentParser:
         prog="agents",
         description="⬡ Диспетчер Агентів та Мікрододатків — запуск, контроль та моніторинг"
     )
+    parser.add_argument("--lang", choices=["uk", "en", "ru"], help="Мова інтерфейсу / Language (uk, en, ru)")
     sub = parser.add_subparsers(dest="command", help="Команда диспетчера")
+
+    # lang
+    p_lang = sub.add_parser("lang", help="Переглянути або змінити мову інтерфейсу (uk, en, ru)")
+    p_lang.add_argument("code", nargs="?", choices=["uk", "en", "ru"], help="Код мови")
 
     # list
     p_list = sub.add_parser("list", aliases=["ls", "ps"], help="Список усіх агентів та їх стан")
@@ -452,6 +497,8 @@ def main():
         cmd_list(manager, args)
     elif cmd == "status":
         cmd_status(manager, args)
+    elif cmd == "lang":
+        cmd_lang(manager, args)
     elif cmd == "start":
         cmd_start(manager, args)
     elif cmd == "stop":
