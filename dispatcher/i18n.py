@@ -36,9 +36,9 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
 
         # Tabs & Filters
         "tab.all": "Всі",
-        "tab.running": "🟢 Активні",
-        "tab.web": "🌐 Веб-додатки",
-        "tab.cli": "⚡ CLI Агенти",
+        "tab.running": "Активні",
+        "tab.web": "Веб-додатки",
+        "tab.cli": "CLI Агенти",
         "search.placeholder": "Пошук агента...",
 
         # Card status
@@ -68,6 +68,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "modal.scan.loading": "Пошук мікрододатків у системних директоріях...",
         "modal.scan.empty": "Мікрододатків не знайдено.",
         "modal.scan.registered": "Вже у реєстрі",
+        "modal.scan.registered_as": "Вже у реєстрі як {id}",
         "modal.add.title": "Додати новий мікрододаток",
         "modal.add.id": "ID агента (slug)*",
         "modal.add.name": "Назва*",
@@ -78,6 +79,29 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "modal.add.cmd": "Команда запуску (start_cmd)",
         "modal.add.cancel": "Скасувати",
         "modal.add.save": "Зберегти",
+
+        # Misc UI strings
+        "state.loading": "Завантаження стану агентів...",
+        "state.empty": "Жодного агента не знайдено за заданими критеріями.",
+        "stats.of": "з",
+        "stats.cores": "ядер",
+        "modal.logs.loading": "Очікування логів...",
+        "modal.logs.lines": "{n} рядків",
+        "modal.logs.error": "Помилка завантаження логів: {err}",
+        "modal.scan.add": "Додати",
+        "modal.scan.error": "Помилка сканування: {err}",
+        "modal.add.desc_ph": "Короткий опис функціоналу",
+        "modal.add.type.daemon": "daemon (фоновий процес)",
+        "modal.add.type.systemd": "systemd юніт",
+        "modal.add.type.cli": "cli інструмент",
+        "modal.add.type.docker": "docker контейнер",
+        "toast.starting": "Запуск {id}...",
+        "toast.stopping": "Зупинка {id}...",
+        "toast.restarting": "Перезапуск {id}...",
+        "toast.batch_running": "Виконується групова дія...",
+        "toast.batch_done": "Групову дію виконано!",
+        "toast.added": "Додано: {name}",
+        "toast.error": "Помилка: {err}",
 
         # CLI Messages
         "cli.header": "Диспетчер Агентів",
@@ -134,9 +158,9 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
 
         # Tabs & Filters
         "tab.all": "All",
-        "tab.running": "🟢 Running",
-        "tab.web": "🌐 Web Apps",
-        "tab.cli": "⚡ CLI Agents",
+        "tab.running": "Running",
+        "tab.web": "Web Apps",
+        "tab.cli": "CLI Agents",
         "search.placeholder": "Search agent...",
 
         # Card status
@@ -166,6 +190,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "modal.scan.loading": "Scanning project directories...",
         "modal.scan.empty": "No micro-applications found.",
         "modal.scan.registered": "Already in registry",
+        "modal.scan.registered_as": "Already in registry as {id}",
         "modal.add.title": "Register New Micro-Application",
         "modal.add.id": "Agent ID (slug)*",
         "modal.add.name": "Name*",
@@ -176,6 +201,29 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "modal.add.cmd": "Start Command (start_cmd)",
         "modal.add.cancel": "Cancel",
         "modal.add.save": "Save",
+
+        # Misc UI strings
+        "state.loading": "Loading agent status...",
+        "state.empty": "No agents match the current filters.",
+        "stats.of": "of",
+        "stats.cores": "cores",
+        "modal.logs.loading": "Waiting for logs...",
+        "modal.logs.lines": "{n} lines",
+        "modal.logs.error": "Failed to load logs: {err}",
+        "modal.scan.add": "Add",
+        "modal.scan.error": "Scan failed: {err}",
+        "modal.add.desc_ph": "Short description of what it does",
+        "modal.add.type.daemon": "daemon (background process)",
+        "modal.add.type.systemd": "systemd unit",
+        "modal.add.type.cli": "cli tool",
+        "modal.add.type.docker": "docker container",
+        "toast.starting": "Starting {id}...",
+        "toast.stopping": "Stopping {id}...",
+        "toast.restarting": "Restarting {id}...",
+        "toast.batch_running": "Running batch action...",
+        "toast.batch_done": "Batch action completed!",
+        "toast.added": "Added: {name}",
+        "toast.error": "Error: {err}",
 
         # CLI Messages
         "cli.header": "Agent Dispatcher",
@@ -232,9 +280,9 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
 
         # Tabs & Filters
         "tab.all": "Все",
-        "tab.running": "🟢 Активные",
-        "tab.web": "🌐 Веб-приложения",
-        "tab.cli": "⚡ CLI Агенты",
+        "tab.running": "Активные",
+        "tab.web": "Веб-приложения",
+        "tab.cli": "CLI Агенты",
         "search.placeholder": "Поиск агента...",
 
         # Card status
@@ -264,6 +312,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "modal.scan.loading": "Поиск микроприложений в системных папках...",
         "modal.scan.empty": "Микроприложений не найдено.",
         "modal.scan.registered": "Уже в реестре",
+        "modal.scan.registered_as": "Уже в реестре как {id}",
         "modal.add.title": "Добавить новое микроприложение",
         "modal.add.id": "ID агента (slug)*",
         "modal.add.name": "Название*",
@@ -274,6 +323,29 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "modal.add.cmd": "Команда запуска (start_cmd)",
         "modal.add.cancel": "Отмена",
         "modal.add.save": "Сохранить",
+
+        # Misc UI strings
+        "state.loading": "Загрузка состояния агентов...",
+        "state.empty": "Ни одного агента не найдено по заданным критериям.",
+        "stats.of": "из",
+        "stats.cores": "ядер",
+        "modal.logs.loading": "Ожидание логов...",
+        "modal.logs.lines": "{n} строк",
+        "modal.logs.error": "Ошибка загрузки логов: {err}",
+        "modal.scan.add": "Добавить",
+        "modal.scan.error": "Ошибка сканирования: {err}",
+        "modal.add.desc_ph": "Краткое описание функционала",
+        "modal.add.type.daemon": "daemon (фоновый процесс)",
+        "modal.add.type.systemd": "systemd юнит",
+        "modal.add.type.cli": "cli инструмент",
+        "modal.add.type.docker": "docker контейнер",
+        "toast.starting": "Запуск {id}...",
+        "toast.stopping": "Остановка {id}...",
+        "toast.restarting": "Перезапуск {id}...",
+        "toast.batch_running": "Выполняется групповое действие...",
+        "toast.batch_done": "Групповое действие выполнено!",
+        "toast.added": "Добавлено: {name}",
+        "toast.error": "Ошибка: {err}",
 
         # CLI Messages
         "cli.header": "Диспетчер Агентов",

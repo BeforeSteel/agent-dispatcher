@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agent Dispatcher — Диспетчер Агентів</title>
+  <title>Agent Dispatcher</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide@1.55.0/dist/umd/lucide.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -42,121 +42,124 @@
     })();
   </script>
   <style>
+    html { color-scheme: light; }
+    html.dark { color-scheme: dark; }
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
     .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    button:focus-visible, a:focus-visible, select:focus-visible, summary:focus-visible {
+      outline: 2px solid #3b82f6;
+      outline-offset: 2px;
+    }
+
     .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+    .no-scrollbar { scrollbar-width: none; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+
+    /* Modals */
+    .modal-backdrop { display: none; }
+    .modal-backdrop.open { display: flex; }
+
+    /* System stat tiles: without a GPU only 3 tiles remain, so don't leave half the row empty */
+    @media (min-width: 1024px) {
+      #stats-grid[data-tiles="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    .stat-bar-fill { background: var(--accent, #3b82f6); transition: width .4s ease, background-color .3s ease; }
+    .stat-bar-fill[data-level="warn"] { background: #f59e0b; }
+    .stat-bar-fill[data-level="crit"] { background: #f43f5e; }
+
+    /* Language menu */
+    .lang-option .lang-check { opacity: 0; }
+    .lang-option.is-current { font-weight: 600; }
+    .lang-option.is-current .lang-check { opacity: 1; }
+  </style>
+  <style type="text/tailwindcss">
+    @layer components {
+      .icon-btn { @apply inline-flex items-center justify-center shrink-0 h-9 w-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition shadow-sm; }
+      .btn-secondary { @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium transition shadow-sm; }
+      .btn-primary { @apply inline-flex items-center justify-center gap-1.5 shrink-0 whitespace-nowrap h-9 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium transition shadow-sm shadow-blue-600/30; }
+      .field { @apply w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500; }
+      .field-label { @apply block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1; }
+
+      .stat-tile { @apply min-w-0 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3.5 py-3 shadow-sm; }
+      .stat-label { @apply flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400; }
+      .stat-value { @apply mt-1 truncate font-mono text-lg font-semibold leading-tight text-slate-900 dark:text-white; }
+      .stat-bar { @apply mt-2 h-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800; }
+      .stat-sub { @apply mt-1.5 truncate text-[11px] text-slate-400 dark:text-slate-500; }
+
+      .tab-btn { @apply inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white; }
+      .tab-btn.active { @apply bg-blue-600 text-white shadow-sm shadow-blue-500/20 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white; }
+      .tab-count { @apply rounded-md bg-slate-100 px-1.5 font-mono text-[10px] leading-4 text-slate-500 dark:bg-slate-800 dark:text-slate-400; }
+      .tab-btn.active .tab-count { @apply bg-white/20 text-white; }
+
+      .modal-backdrop { @apply fixed inset-0 z-50 items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm dark:bg-black/80; }
+      .modal-panel { @apply flex w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900; max-height: 85vh; }
+      .modal-header { @apply flex items-center justify-between gap-3 border-b border-slate-200 p-4 dark:border-slate-800; }
+
+      .lang-option { @apply flex w-full items-center gap-2 px-3 py-2 text-left text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800; }
+    }
   </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col antialiased selection:bg-blue-600 selection:text-white transition-colors duration-150">
 
   <!-- Top Navbar -->
   <header class="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 transition-colors duration-150">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 text-white font-bold text-xl">
-          ⬡
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 text-white">
+          <i data-lucide="hexagon" class="w-5 h-5"></i>
         </div>
-        <div>
-          <div class="flex items-center space-x-2">
-            <h1 class="font-bold text-lg text-slate-900 dark:text-white tracking-tight">Agent Dispatcher</h1>
-            <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">v1.0</span>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <h1 class="truncate font-bold text-base sm:text-lg leading-tight text-slate-900 dark:text-white tracking-tight"><span class="hidden min-[420px]:inline">Agent </span>Dispatcher</h1>
+            <span class="hidden sm:inline-flex shrink-0 px-2 py-0.5 text-xs font-medium rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">v1.0</span>
           </div>
-          <p class="text-xs text-slate-500 dark:text-slate-400">Централізований диспетчер мікрододатків та ШІ-агентів</p>
-        </div>
-      </div>
-
-      <!-- System & GPU Stats Bar -->
-      <div class="hidden md:flex items-center space-x-3">
-        <!-- CPU / RAM / Host -->
-        <div class="flex items-center space-x-3 bg-slate-100/80 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/80 rounded-xl px-3.5 py-1.5 text-xs shadow-sm">
-          <div class="flex items-center space-x-1.5" title="CPU">
-            <i data-lucide="cpu" class="w-3.5 h-3.5 text-blue-500 dark:text-blue-400"></i>
-            <span class="text-slate-500 dark:text-slate-400">CPU:</span>
-            <span id="stat-cpu" class="font-mono font-medium text-slate-700 dark:text-slate-200">--%</span>
-          </div>
-          <div class="w-px h-3.5 bg-slate-200 dark:bg-slate-800"></div>
-          <div class="flex items-center space-x-1.5" title="RAM">
-            <i data-lucide="activity" class="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400"></i>
-            <span class="text-slate-500 dark:text-slate-400">RAM:</span>
-            <span id="stat-ram" class="font-mono font-medium text-slate-700 dark:text-slate-200">-- GB</span>
-          </div>
-          <div class="w-px h-3.5 bg-slate-200 dark:bg-slate-800"></div>
-          <div class="flex items-center space-x-1.5" title="Хост">
-            <i data-lucide="server" class="w-3.5 h-3.5 text-slate-400"></i>
-            <span id="stat-host" class="font-mono text-slate-600 dark:text-slate-300">host</span>
-          </div>
-        </div>
-
-        <!-- GPU Monitor: 3 Основних Параметри (Завантаження, VRAM, Температура) -->
-        <div id="gpu-monitor-bar" class="flex items-center space-x-3 bg-gradient-to-r from-emerald-500/10 via-slate-100 to-slate-100 dark:from-emerald-950/40 dark:via-slate-950/80 dark:to-slate-950/70 border border-emerald-500/30 rounded-xl px-3.5 py-1.5 text-xs shadow-sm" title="NVIDIA GPU">
-          <!-- Параметр 1: Завантаження ядра GPU -->
-          <div class="flex items-center space-x-1.5" title="Завантаження GPU ядра">
-            <span class="relative flex h-2 w-2">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span class="text-emerald-600 dark:text-emerald-400 font-bold uppercase text-[10px] tracking-wide">GPU:</span>
-            <span id="stat-gpu-load" class="font-mono font-bold text-emerald-600 dark:text-emerald-300">--%</span>
-          </div>
-          <div class="w-px h-3.5 bg-slate-200 dark:bg-slate-800"></div>
-          <!-- Параметр 2: Використання відеопам'яті (VRAM) -->
-          <div class="flex items-center space-x-1.5" title="Відеопам'ять (VRAM)">
-            <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400"></i>
-            <span class="text-slate-500 dark:text-slate-400">VRAM:</span>
-            <span id="stat-gpu-vram" class="font-mono font-medium text-cyan-600 dark:text-cyan-300">-- / -- GB</span>
-          </div>
-          <div class="w-px h-3.5 bg-slate-200 dark:bg-slate-800"></div>
-          <!-- Параметр 3: Температура відеокарти -->
-          <div class="flex items-center space-x-1.5" title="Температура GPU">
-            <i data-lucide="thermometer" class="w-3.5 h-3.5 text-amber-500 dark:text-amber-400"></i>
-            <span class="text-slate-500 dark:text-slate-400">Temp:</span>
-            <span id="stat-gpu-temp" class="font-mono font-medium text-amber-600 dark:text-amber-300">--°C</span>
-          </div>
+          <p class="hidden md:block truncate text-xs text-slate-500 dark:text-slate-400" data-i18n="app.subtitle">Централізований диспетчер мікрододатків та ШІ-агентів</p>
         </div>
       </div>
 
       <!-- Header Action Buttons -->
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <!-- Theme Toggle (Light / Dark) -->
-        <button onclick="toggleTheme()" id="theme-toggle-btn" class="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 transition flex items-center justify-center shadow-sm" title="Перемкнути тему" data-i18n-title="btn.theme">
-          <i data-lucide="sun" id="theme-icon-sun" class="w-4 h-4 text-amber-500 hidden"></i>
-          <i data-lucide="moon" id="theme-icon-moon" class="w-4 h-4 text-slate-400 hidden"></i>
+        <button onclick="toggleTheme()" id="theme-toggle-btn" class="icon-btn" title="Перемкнути тему" aria-label="Перемкнути тему" data-i18n-title="btn.theme" data-i18n-aria="btn.theme">
+          <i data-lucide="sun" class="w-4 h-4 text-amber-500 hidden dark:block"></i>
+          <i data-lucide="moon" class="w-4 h-4 text-slate-500 block dark:hidden"></i>
         </button>
 
         <!-- Language Switcher -->
-        <div class="relative inline-block text-left" id="lang-dropdown-wrapper">
-          <button onclick="toggleLangMenu()" id="current-lang-btn" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 transition flex items-center space-x-1.5 shadow-sm">
-            <span id="current-lang-flag">🇺🇦</span>
-            <span id="current-lang-code" class="font-mono">UA</span>
-            <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
+        <div class="relative" id="lang-dropdown-wrapper">
+          <button onclick="toggleLangMenu()" id="current-lang-btn" class="btn-secondary !px-2.5" aria-haspopup="true" aria-label="Language">
+            <i data-lucide="languages" class="w-4 h-4 text-slate-500 dark:text-slate-400"></i>
+            <span id="current-lang-code" class="hidden sm:inline font-mono font-semibold">UA</span>
+            <i data-lucide="chevron-down" class="hidden sm:block w-3 h-3 text-slate-400"></i>
           </button>
-          <div id="lang-menu" class="hidden absolute right-0 mt-1 w-32 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl py-1 z-50 text-xs">
-            <button onclick="changeLang('uk')" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center space-x-2 text-slate-700 dark:text-slate-200">
-              <span>🇺🇦</span> <span>Українська</span>
+          <div id="lang-menu" class="hidden absolute right-0 mt-1.5 w-44 overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl py-1 z-50 text-xs">
+            <button onclick="changeLang('uk')" data-lang-option="uk" class="lang-option">
+              <span class="w-5 font-mono text-[10px] text-slate-400">UA</span><span class="flex-1">Українська</span><i data-lucide="check" class="lang-check w-3.5 h-3.5 text-blue-500"></i>
             </button>
-            <button onclick="changeLang('en')" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center space-x-2 text-slate-700 dark:text-slate-200">
-              <span>🇬🇧</span> <span>English</span>
+            <button onclick="changeLang('en')" data-lang-option="en" class="lang-option">
+              <span class="w-5 font-mono text-[10px] text-slate-400">EN</span><span class="flex-1">English</span><i data-lucide="check" class="lang-check w-3.5 h-3.5 text-blue-500"></i>
             </button>
-            <button onclick="changeLang('ru')" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center space-x-2 text-slate-700 dark:text-slate-200">
-              <span>🌐</span> <span>Русский</span>
+            <button onclick="changeLang('ru')" data-lang-option="ru" class="lang-option">
+              <span class="w-5 font-mono text-[10px] text-slate-400">RU</span><span class="flex-1">Русский</span><i data-lucide="check" class="lang-check w-3.5 h-3.5 text-blue-500"></i>
             </button>
           </div>
         </div>
 
-        <button onclick="openScanModal()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 transition flex items-center space-x-1.5 shadow-sm">
-          <i data-lucide="scan" class="w-3.5 h-3.5 text-blue-500 dark:text-blue-400"></i>
+        <button onclick="openScanModal()" class="btn-secondary" data-i18n-aria="btn.scan" aria-label="Сканувати">
+          <i data-lucide="scan" class="w-4 h-4 text-blue-500 dark:text-blue-400"></i>
           <span class="hidden sm:inline" data-i18n="btn.scan">Сканувати</span>
         </button>
-        <button onclick="openAddModal()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded-lg transition flex items-center space-x-1.5 shadow-sm shadow-blue-600/30">
-          <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-          <span data-i18n="btn.add">Додати</span>
+        <button onclick="openAddModal()" class="btn-primary" data-i18n-aria="btn.add" aria-label="Додати">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          <span class="hidden sm:inline" data-i18n="btn.add">Додати</span>
         </button>
-        <button onclick="fetchStatus(true)" id="refresh-btn" title="Оновити стан" class="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 transition shadow-sm">
+        <button onclick="fetchStatus(true)" id="refresh-btn" class="icon-btn hidden sm:inline-flex" title="Оновити стан" aria-label="Оновити стан" data-i18n-title="btn.refresh" data-i18n-aria="btn.refresh">
           <i data-lucide="refresh-cw" class="w-4 h-4"></i>
         </button>
       </div>
@@ -166,35 +169,84 @@
   <!-- Main Content -->
   <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
+    <!-- System Stats -->
+    <section id="stats-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6" aria-label="System">
+      <div class="stat-tile" style="--accent:#3b82f6">
+        <div class="stat-label"><i data-lucide="cpu" class="w-3.5 h-3.5 text-blue-500 dark:text-blue-400"></i><span data-i18n="stats.cpu">CPU</span></div>
+        <div id="stat-cpu" class="stat-value">--%</div>
+        <div class="stat-bar"><div id="stat-cpu-bar" class="stat-bar-fill h-full rounded-full" style="width:0%"></div></div>
+        <div id="stat-cpu-sub" class="stat-sub">&nbsp;</div>
+      </div>
+
+      <div class="stat-tile" style="--accent:#6366f1">
+        <div class="stat-label"><i data-lucide="memory-stick" class="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400"></i><span data-i18n="stats.ram">RAM</span></div>
+        <div id="stat-ram" class="stat-value">-- GB</div>
+        <div class="stat-bar"><div id="stat-ram-bar" class="stat-bar-fill h-full rounded-full" style="width:0%"></div></div>
+        <div id="stat-ram-sub" class="stat-sub">&nbsp;</div>
+      </div>
+
+      <div class="stat-tile" data-gpu style="--accent:#10b981" title="NVIDIA GPU">
+        <div class="stat-label"><i data-lucide="gpu" class="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400"></i><span data-i18n="stats.gpu">GPU</span></div>
+        <div id="stat-gpu-load" class="stat-value">--%</div>
+        <div class="stat-bar"><div id="stat-gpu-load-bar" class="stat-bar-fill h-full rounded-full" style="width:0%"></div></div>
+        <div id="stat-gpu-sub" class="stat-sub">&nbsp;</div>
+      </div>
+
+      <div class="stat-tile" data-gpu style="--accent:#06b6d4">
+        <div class="stat-label"><i data-lucide="hard-drive" class="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400"></i><span data-i18n="stats.vram">VRAM</span></div>
+        <div id="stat-gpu-vram" class="stat-value">-- GB</div>
+        <div class="stat-bar"><div id="stat-gpu-vram-bar" class="stat-bar-fill h-full rounded-full" style="width:0%"></div></div>
+        <div id="stat-gpu-vram-sub" class="stat-sub">&nbsp;</div>
+      </div>
+
+      <div class="stat-tile" data-gpu style="--accent:#10b981">
+        <div class="stat-label"><i data-lucide="thermometer" class="w-3.5 h-3.5 text-amber-500 dark:text-amber-400"></i><span data-i18n="stats.temp">Temp</span></div>
+        <div id="stat-gpu-temp" class="stat-value">--°C</div>
+        <div class="stat-bar"><div id="stat-gpu-temp-bar" class="stat-bar-fill h-full rounded-full" style="width:0%"></div></div>
+        <div id="stat-gpu-power" class="stat-sub">&nbsp;</div>
+      </div>
+
+      <div class="stat-tile">
+        <div class="stat-label"><i data-lucide="server" class="w-3.5 h-3.5 text-slate-400"></i><span data-i18n="stats.host">Хост</span></div>
+        <div id="stat-host" class="stat-value">host</div>
+        <div class="mt-2 h-1"></div>
+        <div id="stat-host-sub" class="stat-sub">&nbsp;</div>
+      </div>
+    </section>
+
     <!-- Overview Bar & Batch Actions -->
-    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-6">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-5">
       <!-- Tabs / Filters -->
-      <div class="flex items-center space-x-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1 text-xs overflow-x-auto shadow-sm">
-        <button onclick="setFilter('all')" class="tab-btn active px-3 py-1.5 rounded-lg font-medium transition text-white bg-blue-600 shadow-sm shadow-blue-500/20" data-tab="all">
-          <span data-i18n="tab.all">Всі</span> (<span id="count-all">0</span>)
+      <div class="no-scrollbar flex max-w-full items-center gap-1 overflow-x-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1 text-xs shadow-sm" role="tablist">
+        <button onclick="setFilter('all')" class="tab-btn active" data-tab="all" role="tab">
+          <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+          <span data-i18n="tab.all">Всі</span><span class="tab-count" id="count-all">0</span>
         </button>
-        <button onclick="setFilter('running')" class="tab-btn px-3 py-1.5 rounded-lg font-medium transition text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white" data-tab="running">
-          <span data-i18n="tab.running">🟢 Активні</span> (<span id="count-running">0</span>)
+        <button onclick="setFilter('running')" class="tab-btn" data-tab="running" role="tab">
+          <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+          <span data-i18n="tab.running">Активні</span><span class="tab-count" id="count-running">0</span>
         </button>
-        <button onclick="setFilter('web_app')" class="tab-btn px-3 py-1.5 rounded-lg font-medium transition text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white" data-tab="web_app">
-          <span data-i18n="tab.web">🌐 Веб-додатки</span>
+        <button onclick="setFilter('web_app')" class="tab-btn" data-tab="web_app" role="tab">
+          <i data-lucide="globe" class="w-3.5 h-3.5"></i>
+          <span data-i18n="tab.web">Веб-додатки</span><span class="tab-count" id="count-web_app">0</span>
         </button>
-        <button onclick="setFilter('cli')" class="tab-btn px-3 py-1.5 rounded-lg font-medium transition text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white" data-tab="cli">
-          <span data-i18n="tab.cli">⚡ CLI Агенти</span>
+        <button onclick="setFilter('cli')" class="tab-btn" data-tab="cli" role="tab">
+          <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
+          <span data-i18n="tab.cli">CLI Агенти</span><span class="tab-count" id="count-cli">0</span>
         </button>
       </div>
 
       <!-- Search & Batch Controls -->
-      <div class="flex items-center space-x-3">
-        <div class="relative flex-1 sm:w-64">
-          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-          <input type="text" id="search-input" oninput="onSearchChange()" placeholder="Пошук агента..." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm">
+      <div class="flex items-center gap-2">
+        <div class="relative flex-1 lg:w-64 lg:flex-none">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+          <input type="text" id="search-input" oninput="onSearchChange()" placeholder="Пошук агента..." data-i18n-placeholder="search.placeholder" class="field !h-9 !py-0 !pl-9 !text-xs shadow-sm">
         </div>
-        <button onclick="batchAction('start_all')" title="Запустити всі сервіси" class="px-2.5 py-1.5 bg-white hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 hover:border-emerald-500/30 transition flex items-center space-x-1 shadow-sm">
+        <button onclick="batchAction('start_all')" title="Запустити всі сервіси" aria-label="Запустити всі сервіси" data-i18n-title="btn.start_all" data-i18n-aria="btn.start_all" class="btn-secondary !bg-white dark:!bg-slate-800 !text-emerald-600 dark:!text-emerald-400 hover:!bg-emerald-50 dark:hover:!bg-emerald-900/40 hover:!border-emerald-500/40">
           <i data-lucide="play" class="w-3.5 h-3.5"></i>
           <span class="hidden md:inline" data-i18n="btn.start_all">Старт всі</span>
         </button>
-        <button onclick="batchAction('stop_all')" title="Зупинити всі сервіси" class="px-2.5 py-1.5 bg-white hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-red-900/40 text-rose-600 dark:text-red-400 hover:text-rose-700 dark:hover:text-red-300 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 hover:border-rose-500/30 transition flex items-center space-x-1 shadow-sm">
+        <button onclick="batchAction('stop_all')" title="Зупинити всі сервіси" aria-label="Зупинити всі сервіси" data-i18n-title="btn.stop_all" data-i18n-aria="btn.stop_all" class="btn-secondary !bg-white dark:!bg-slate-800 !text-rose-600 dark:!text-rose-400 hover:!bg-rose-50 dark:hover:!bg-rose-900/40 hover:!border-rose-500/40">
           <i data-lucide="square" class="w-3.5 h-3.5"></i>
           <span class="hidden md:inline" data-i18n="btn.stop_all">Стоп всі</span>
         </button>
@@ -205,119 +257,112 @@
     <div id="agents-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <!-- Loading Skeleton -->
       <div class="col-span-full py-16 text-center text-slate-400 dark:text-slate-500 flex flex-col items-center">
-        <i data-lucide="loader-2" class="w-8 h-8 animate-spin text-blue-500 mb-3"></i>
-        <p class="text-sm">Завантаження стану агентів...</p>
+        <i data-lucide="loader-circle" class="w-8 h-8 animate-spin text-blue-500 mb-3"></i>
+        <p class="text-sm" data-i18n="state.loading">Завантаження стану агентів...</p>
       </div>
     </div>
   </main>
 
   <!-- Modal: Live Logs -->
-  <div id="modal-logs" class="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
-      <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-        <div class="flex items-center space-x-2">
-          <i data-lucide="terminal" class="w-5 h-5 text-blue-500 dark:text-blue-400"></i>
-          <h3 id="modal-logs-title" class="font-semibold text-slate-900 dark:text-white text-sm">Логи агента</h3>
+  <div id="modal-logs" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-logs-title" onclick="onBackdropClick(event, 'modal-logs')">
+    <div class="modal-panel max-w-4xl">
+      <div class="modal-header">
+        <div class="flex min-w-0 items-center gap-2">
+          <i data-lucide="terminal" class="w-5 h-5 shrink-0 text-blue-500 dark:text-blue-400"></i>
+          <h3 id="modal-logs-title" class="truncate font-semibold text-slate-900 dark:text-white text-sm">Логи агента</h3>
         </div>
-        <div class="flex items-center space-x-2">
-          <select id="logs-line-count" onchange="fetchLogs(currentLogAgentId)" class="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs px-2 py-1 text-slate-700 dark:text-slate-300">
-            <option value="50">50 рядків</option>
-            <option value="100">100 рядків</option>
-            <option value="250">250 рядків</option>
+        <div class="flex shrink-0 items-center gap-2">
+          <select id="logs-line-count" onchange="fetchLogs(currentLogAgentId)" class="field !w-auto !py-1.5">
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="250">250</option>
           </select>
-          <button onclick="fetchLogs(currentLogAgentId)" class="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg transition" title="Оновити">
+          <button onclick="fetchLogs(currentLogAgentId)" class="icon-btn !h-8 !w-8 !shadow-none" title="Оновити" aria-label="Оновити" data-i18n-title="modal.logs.refresh" data-i18n-aria="modal.logs.refresh">
             <i data-lucide="refresh-cw" class="w-4 h-4"></i>
           </button>
-          <button onclick="closeModal('modal-logs')" class="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg transition">
+          <button onclick="closeModal('modal-logs')" class="icon-btn !h-8 !w-8 !shadow-none" aria-label="Close">
             <i data-lucide="x" class="w-4 h-4"></i>
           </button>
         </div>
       </div>
-      <div class="p-4 flex-1 overflow-y-auto bg-slate-950 font-mono text-xs text-slate-300 leading-relaxed custom-scrollbar whitespace-pre-wrap selection:bg-blue-600" id="logs-content">
-        Очікування логів...
-      </div>
+      <div class="p-4 flex-1 min-h-[12rem] overflow-y-auto bg-slate-950 font-mono text-xs text-slate-300 leading-relaxed custom-scrollbar whitespace-pre-wrap break-words selection:bg-blue-600" id="logs-content"></div>
     </div>
   </div>
 
   <!-- Modal: Discovery Scan -->
-  <div id="modal-scan" class="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
-      <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-        <div class="flex items-center space-x-2">
-          <i data-lucide="scan" class="w-5 h-5 text-blue-500 dark:text-blue-400"></i>
-          <h3 class="font-semibold text-slate-900 dark:text-white text-sm">Сканування системи на наявність мікрододатків</h3>
+  <div id="modal-scan" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-scan-title" onclick="onBackdropClick(event, 'modal-scan')">
+    <div class="modal-panel max-w-3xl">
+      <div class="modal-header">
+        <div class="flex min-w-0 items-center gap-2">
+          <i data-lucide="scan" class="w-5 h-5 shrink-0 text-blue-500 dark:text-blue-400"></i>
+          <h3 id="modal-scan-title" class="truncate font-semibold text-slate-900 dark:text-white text-sm" data-i18n="modal.scan.title">Сканування системи на наявність мікрододатків</h3>
         </div>
-        <button onclick="closeModal('modal-scan')" class="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg transition">
+        <button onclick="closeModal('modal-scan')" class="icon-btn !h-8 !w-8 !shadow-none" aria-label="Close">
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
-      <div class="p-4 flex-1 overflow-y-auto space-y-3 custom-scrollbar" id="scan-results-container">
-        <div class="text-center py-8 text-slate-400 dark:text-slate-500">
-          <i data-lucide="loader-2" class="w-6 h-6 animate-spin text-blue-500 mx-auto mb-2"></i>
-          Пошук мікрододатків у системних директоріях...
-        </div>
-      </div>
+      <div class="p-4 flex-1 overflow-y-auto space-y-2.5 custom-scrollbar" id="scan-results-container"></div>
     </div>
   </div>
 
   <!-- Modal: Add Custom Agent -->
-  <div id="modal-add" class="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
-      <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-        <div class="flex items-center space-x-2">
-          <i data-lucide="plus-circle" class="w-5 h-5 text-blue-500 dark:text-blue-400"></i>
-          <h3 class="font-semibold text-slate-900 dark:text-white text-sm">Додати новий мікрододаток</h3>
+  <div id="modal-add" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-add-title" onclick="onBackdropClick(event, 'modal-add')">
+    <div class="modal-panel max-w-lg">
+      <div class="modal-header">
+        <div class="flex min-w-0 items-center gap-2">
+          <i data-lucide="circle-plus" class="w-5 h-5 shrink-0 text-blue-500 dark:text-blue-400"></i>
+          <h3 id="modal-add-title" class="truncate font-semibold text-slate-900 dark:text-white text-sm" data-i18n="modal.add.title">Додати новий мікрододаток</h3>
         </div>
-        <button onclick="closeModal('modal-add')" class="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg transition">
+        <button onclick="closeModal('modal-add')" class="icon-btn !h-8 !w-8 !shadow-none" aria-label="Close">
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
-      <form id="add-agent-form" onsubmit="submitAddAgent(event)" class="p-4 space-y-3">
+      <form id="add-agent-form" onsubmit="submitAddAgent(event)" class="p-4 space-y-3 overflow-y-auto custom-scrollbar">
         <div>
-          <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">ID агента (slug)*</label>
-          <input type="text" id="add-id" required placeholder="my-service" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500">
+          <label for="add-id" class="field-label" data-i18n="modal.add.id">ID агента (slug)*</label>
+          <input type="text" id="add-id" required placeholder="my-service" class="field">
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Назва*</label>
-          <input type="text" id="add-name" required placeholder="My Service Name" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500">
+          <label for="add-name" class="field-label" data-i18n="modal.add.name">Назва*</label>
+          <input type="text" id="add-name" required placeholder="My Service Name" class="field">
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Опис</label>
-          <input type="text" id="add-desc" placeholder="Короткий опис функціоналу" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500">
+          <label for="add-desc" class="field-label" data-i18n="modal.add.desc">Опис</label>
+          <input type="text" id="add-desc" data-i18n-placeholder="modal.add.desc_ph" placeholder="Короткий опис функціоналу" class="field">
         </div>
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Тип запуску</label>
-            <select id="add-type" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500">
-              <option value="daemon">daemon (фоновий процес)</option>
-              <option value="systemd">systemd юніт</option>
-              <option value="cli">cli інструмент</option>
-              <option value="docker">docker контейнер</option>
+            <label for="add-type" class="field-label" data-i18n="modal.add.type">Тип запуску</label>
+            <select id="add-type" class="field">
+              <option value="daemon" data-i18n="modal.add.type.daemon">daemon (фоновий процес)</option>
+              <option value="systemd" data-i18n="modal.add.type.systemd">systemd юніт</option>
+              <option value="cli" data-i18n="modal.add.type.cli">cli інструмент</option>
+              <option value="docker" data-i18n="modal.add.type.docker">docker контейнер</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Порт (якщо веб)</label>
-            <input type="number" id="add-port" placeholder="8000" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500">
+            <label for="add-port" class="field-label" data-i18n="modal.add.port">Порт (якщо веб)</label>
+            <input type="number" id="add-port" placeholder="8000" class="field">
           </div>
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Робочий каталог (working dir)</label>
-          <input type="text" id="add-dir" placeholder="/path/to/projects/..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500">
+          <label for="add-dir" class="field-label" data-i18n="modal.add.dir">Робочий каталог (working dir)</label>
+          <input type="text" id="add-dir" placeholder="/path/to/project" class="field font-mono">
         </div>
         <div>
-          <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Команда запуску (start_cmd)</label>
-          <input type="text" id="add-cmd" placeholder="python app.py або ./run.sh start" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500">
+          <label for="add-cmd" class="field-label" data-i18n="modal.add.cmd">Команда запуску (start_cmd)</label>
+          <input type="text" id="add-cmd" placeholder="python app.py / ./run.sh start" class="field font-mono">
         </div>
-        <div class="pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-end space-x-2">
-          <button type="button" onclick="closeModal('modal-add')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs rounded-lg transition">Скасувати</button>
-          <button type="submit" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-500 transition shadow-sm">Зберегти</button>
+        <div class="pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-2">
+          <button type="button" onclick="closeModal('modal-add')" class="btn-secondary" data-i18n="modal.add.cancel">Скасувати</button>
+          <button type="submit" class="btn-primary" data-i18n="modal.add.save">Зберегти</button>
         </div>
       </form>
     </div>
   </div>
 
   <!-- Toast Notification Container -->
-  <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+  <div id="toast-container" class="fixed bottom-4 inset-x-4 sm:inset-x-auto sm:right-4 z-[60] flex flex-col items-stretch sm:items-end gap-2 pointer-events-none"></div>
 
   <!-- Scripts -->
   <script src="/static/js/app.js"></script>

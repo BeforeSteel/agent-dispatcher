@@ -14,7 +14,7 @@ const fallbackI18n = {
     "card.memory": "Пам'ять", "card.cpu": "CPU", "card.uptime": "Аптайм",
     "btn.start": "Запустити", "btn.stop": "Стоп", "btn.restart": "Перезапустити", "btn.logs": "Логи", "btn.open_ui": "Відкрити інтерфейс",
     "btn.scan": "Сканувати", "btn.add": "Додати", "btn.start_all": "Старт всі", "btn.stop_all": "Стоп всі", "btn.theme": "Перемкнути тему (світла/темна)",
-    "tab.all": "Всі", "tab.running": "🟢 Активні", "tab.web": "🌐 Веб-додатки", "tab.cli": "⚡ CLI Агенти",
+    "tab.all": "Всі", "tab.running": "Активні", "tab.web": "Веб-додатки", "tab.cli": "CLI Агенти",
     "search.placeholder": "Пошук агента...",
   },
   en: {
@@ -22,7 +22,7 @@ const fallbackI18n = {
     "card.memory": "Memory", "card.cpu": "CPU", "card.uptime": "Uptime",
     "btn.start": "Start", "btn.stop": "Stop", "btn.restart": "Restart", "btn.logs": "Logs", "btn.open_ui": "Open Web UI",
     "btn.scan": "Scan", "btn.add": "Add Agent", "btn.start_all": "Start All", "btn.stop_all": "Stop All", "btn.theme": "Toggle theme (light/dark)",
-    "tab.all": "All", "tab.running": "🟢 Running", "tab.web": "🌐 Web Apps", "tab.cli": "⚡ CLI Agents",
+    "tab.all": "All", "tab.running": "Running", "tab.web": "Web Apps", "tab.cli": "CLI Agents",
     "search.placeholder": "Search agent...",
   },
   ru: {
@@ -30,7 +30,7 @@ const fallbackI18n = {
     "card.memory": "Память", "card.cpu": "CPU", "card.uptime": "Аптайм",
     "btn.start": "Запустить", "btn.stop": "Стоп", "btn.restart": "Перезапуск", "btn.logs": "Логи", "btn.open_ui": "Открыть интерфейс",
     "btn.scan": "Сканировать", "btn.add": "Добавить", "btn.start_all": "Старт все", "btn.stop_all": "Стоп все", "btn.theme": "Переключить тему (светлая/темная)",
-    "tab.all": "Все", "tab.running": "🟢 Активные", "tab.web": "🌐 Веб-приложения", "tab.cli": "⚡ CLI Агенты",
+    "tab.all": "Все", "tab.running": "Активные", "tab.web": "Веб-приложения", "tab.cli": "CLI Агенты",
     "search.placeholder": "Поиск агента...",
   }
 };
@@ -46,6 +46,18 @@ function t(key) {
     return fallbackI18n['uk'][key];
   }
   return key;
+}
+
+// Translate a key and fill {placeholders}
+function tf(key, vars = {}) {
+  return Object.entries(vars).reduce((str, [name, value]) => str.split(`{${name}}`).join(value), t(key));
+}
+
+// Escape untrusted text (agent names, README descriptions, logs) before it goes into innerHTML
+function esc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
 }
 
 function getAgentName(agent) {
@@ -99,39 +111,29 @@ function applyTranslations() {
     const key = el.getAttribute('data-i18n-placeholder');
     el.placeholder = t(key);
   });
+  document.querySelectorAll('[data-i18n-aria]').forEach(el => {
+    const key = el.getAttribute('data-i18n-aria');
+    el.setAttribute('aria-label', t(key));
+  });
+  document.querySelectorAll('#logs-line-count option').forEach(opt => {
+    opt.textContent = tf('modal.logs.lines', { n: opt.value });
+  });
 
-  const flagEl = document.getElementById('current-lang-flag');
+  document.documentElement.lang = currentLang;
   const codeEl = document.getElementById('current-lang-code');
-  if (flagEl && codeEl) {
-    if (currentLang === 'en') {
-      flagEl.textContent = '🇬🇧';
-      codeEl.textContent = 'EN';
-    } else if (currentLang === 'ru') {
-      flagEl.textContent = '🌐';
-      codeEl.textContent = 'RU';
-    } else {
-      flagEl.textContent = '🇺🇦';
-      codeEl.textContent = 'UA';
-    }
+  if (codeEl) {
+    codeEl.textContent = { en: 'EN', ru: 'RU' }[currentLang] || 'UA';
   }
+  document.querySelectorAll('[data-lang-option]').forEach(el => {
+    el.classList.toggle('is-current', el.dataset.langOption === currentLang);
+  });
 }
 
 // Theme Toggle (Light / Dark)
 let currentTheme = localStorage.getItem('agents_theme') || 'dark';
 
+// Sun/moon visibility is handled by `dark:` classes in the markup; this only renders the static icons
 function updateThemeIcons() {
-  const isDark = document.documentElement.classList.contains('dark');
-  const sunIcon = document.getElementById('theme-icon-sun');
-  const moonIcon = document.getElementById('theme-icon-moon');
-  if (sunIcon && moonIcon) {
-    if (isDark) {
-      sunIcon.classList.remove('hidden');
-      moonIcon.classList.add('hidden');
-    } else {
-      sunIcon.classList.add('hidden');
-      moonIcon.classList.remove('hidden');
-    }
-  }
   if (window.lucide) {
     lucide.createIcons();
   }
@@ -163,11 +165,20 @@ document.addEventListener('click', (e) => {
   }
 });
 
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const langMenu = document.getElementById('lang-menu');
+  if (langMenu) langMenu.classList.add('hidden');
+  document.querySelectorAll('.modal-backdrop.open').forEach(modal => closeModal(modal.id));
+});
+
 async function changeLang(lang) {
   currentLang = lang;
   localStorage.setItem('agents_lang', lang);
-  toggleLangMenu();
+  const langMenu = document.getElementById('lang-menu');
+  if (langMenu) langMenu.classList.add('hidden');
   applyTranslations();
+  updateSystemStats(lastSystemStats);
   renderCards();
   try {
     await fetch('/api/lang', {
@@ -189,17 +200,30 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Toast notifications
+const TOAST_STYLES = {
+  success: {
+    icon: 'circle-check',
+    classes: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/90 dark:text-emerald-200 dark:border-emerald-800'
+  },
+  error: {
+    icon: 'circle-alert',
+    classes: 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/90 dark:text-rose-200 dark:border-rose-800'
+  },
+  info: {
+    icon: 'info',
+    classes: 'bg-white text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700'
+  }
+};
+
 function showToast(message, type = 'success') {
   const container = document.getElementById('toast-container');
+  const style = TOAST_STYLES[type] || TOAST_STYLES.info;
   const toast = document.createElement('div');
-  const colors = {
-    success: 'bg-emerald-900/90 text-emerald-200 border-emerald-700',
-    error: 'bg-rose-900/90 text-rose-200 border-rose-700',
-    info: 'bg-slate-800 text-slate-200 border-slate-700'
-  };
-  toast.className = `px-4 py-2.5 rounded-xl border shadow-xl text-xs flex items-center space-x-2 pointer-events-auto transition transform duration-200 translate-y-2 opacity-0 ${colors[type] || colors.info}`;
-  toast.innerHTML = `<span>${message}</span>`;
+  toast.className = `px-4 py-2.5 rounded-xl border shadow-xl text-xs flex items-center gap-2 pointer-events-auto transition transform duration-200 translate-y-2 opacity-0 ${style.classes}`;
+  toast.innerHTML = `<i data-lucide="${style.icon}" class="w-4 h-4 shrink-0"></i><span class="min-w-0 break-words"></span>`;
+  toast.lastElementChild.textContent = message;
   container.appendChild(toast);
+  lucide.createIcons();
 
   setTimeout(() => {
     toast.classList.remove('translate-y-2', 'opacity-0');
@@ -214,8 +238,9 @@ function showToast(message, type = 'success') {
 // Fetch live status
 async function fetchStatus(manual = false) {
   const refreshBtn = document.getElementById('refresh-btn');
-  if (manual && refreshBtn) {
-    refreshBtn.classList.add('animate-spin');
+  const refreshIcon = refreshBtn && refreshBtn.querySelector('svg, i');
+  if (manual && refreshIcon) {
+    refreshIcon.classList.add('animate-spin');
   }
 
   try {
@@ -230,93 +255,96 @@ async function fetchStatus(manual = false) {
   } catch (err) {
     console.error('Failed to fetch status:', err);
   } finally {
-    if (manual && refreshBtn) {
-      setTimeout(() => refreshBtn.classList.remove('animate-spin'), 300);
+    if (manual && refreshIcon) {
+      setTimeout(() => refreshIcon.classList.remove('animate-spin'), 300);
     }
   }
 }
 
-// Update Topbar system metrics (CPU, RAM, Host + GPU)
+// Update system metric tiles (CPU, RAM, Host + GPU)
+let lastSystemStats = null;
+
+function setStatBar(id, percent, warnAt = 60, critAt = 85) {
+  const bar = document.getElementById(id);
+  if (!bar) return;
+  const pct = Math.max(0, Math.min(100, Number(percent) || 0));
+  bar.style.width = `${pct}%`;
+  bar.dataset.level = pct >= critAt ? 'crit' : (pct >= warnAt ? 'warn' : 'ok');
+}
+
+function setText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+
 function updateSystemStats(sys) {
   if (!sys) return;
-  const cpuEl = document.getElementById('stat-cpu');
-  const ramEl = document.getElementById('stat-ram');
-  const hostEl = document.getElementById('stat-host');
+  lastSystemStats = sys;
 
-  if (cpuEl && sys.cpu_percent !== undefined) {
-    cpuEl.textContent = `${sys.cpu_percent}%`;
+  if (sys.cpu_percent !== undefined) {
+    setText('stat-cpu', `${sys.cpu_percent}%`);
+    setStatBar('stat-cpu-bar', sys.cpu_percent);
+    if (sys.cpu_count) setText('stat-cpu-sub', `${sys.cpu_count} ${t('stats.cores')}`);
   }
-  if (ramEl && sys.memory_used_gb !== undefined) {
-    ramEl.textContent = `${sys.memory_used_gb}/${sys.memory_total_gb} GB`;
+  if (sys.memory_used_gb !== undefined) {
+    setText('stat-ram', `${sys.memory_used_gb} GB`);
+    setStatBar('stat-ram-bar', sys.memory_percent);
+    setText('stat-ram-sub', `${t('stats.of')} ${sys.memory_total_gb} GB · ${Math.round(sys.memory_percent)}%`);
   }
-  if (hostEl && sys.hostname) {
-    hostEl.textContent = sys.hostname;
+  if (sys.hostname) {
+    setText('stat-host', sys.hostname);
+    const ips = sys.ips || {};
+    const addr = ips.tailscale || ips.lan;
+    setText('stat-host-sub', addr || ' ');
   }
 
-  // GPU 3 Основних Параметри (Load %, VRAM, Temperature)
-  const gpuBar = document.getElementById('gpu-monitor-bar');
-  const gpuLoadEl = document.getElementById('stat-gpu-load');
-  const gpuVramEl = document.getElementById('stat-gpu-vram');
-  const gpuTempEl = document.getElementById('stat-gpu-temp');
+  // GPU tiles: load %, VRAM, temperature (hidden when no GPU is present)
+  const gpu = sys.gpu && sys.gpu.available ? sys.gpu : null;
+  document.querySelectorAll('[data-gpu]').forEach(tile => tile.classList.toggle('hidden', !gpu));
+  const statsGrid = document.getElementById('stats-grid');
+  if (statsGrid) statsGrid.dataset.tiles = gpu ? '6' : '3';
+  if (!gpu) return;
 
-  if (sys.gpu && sys.gpu.available) {
-    if (gpuBar) {
-      gpuBar.classList.remove('hidden');
-      const powerStr = sys.gpu.power_w ? ` • ${sys.gpu.power_w}W / ${sys.gpu.power_limit_w}W` : '';
-      gpuBar.title = `${sys.gpu.name}${powerStr}`;
-    }
-    // Параметр 1: Завантаження GPU %
-    if (gpuLoadEl && sys.gpu.gpu_util_percent !== undefined) {
-      gpuLoadEl.textContent = `${sys.gpu.gpu_util_percent}%`;
-      if (sys.gpu.gpu_util_percent >= 85) {
-        gpuLoadEl.className = 'font-mono font-bold text-rose-400';
-      } else if (sys.gpu.gpu_util_percent >= 50) {
-        gpuLoadEl.className = 'font-mono font-bold text-amber-400';
-      } else {
-        gpuLoadEl.className = 'font-mono font-bold text-emerald-300';
-      }
-    }
-    // Параметр 2: Відеопам'ять VRAM
-    if (gpuVramEl && sys.gpu.mem_used_gb !== undefined) {
-      gpuVramEl.textContent = `${sys.gpu.mem_used_gb} / ${sys.gpu.mem_total_gb} GB`;
-    }
-    // Параметр 3: Температура
-    if (gpuTempEl && sys.gpu.temperature_c !== undefined) {
-      gpuTempEl.textContent = `${sys.gpu.temperature_c}°C`;
-      if (sys.gpu.temperature_c >= 80) {
-        gpuTempEl.className = 'font-mono font-medium text-rose-400';
-      } else if (sys.gpu.temperature_c >= 70) {
-        gpuTempEl.className = 'font-mono font-medium text-amber-400';
-      } else {
-        gpuTempEl.className = 'font-mono font-medium text-amber-300';
-      }
-    }
-  } else if (gpuBar) {
-    gpuBar.classList.add('hidden');
+  if (gpu.gpu_util_percent !== undefined) {
+    setText('stat-gpu-load', `${gpu.gpu_util_percent}%`);
+    setStatBar('stat-gpu-load-bar', gpu.gpu_util_percent, 50, 85);
+    setText('stat-gpu-sub', gpu.name || ' ');
   }
+  if (gpu.mem_used_gb !== undefined) {
+    setText('stat-gpu-vram', `${gpu.mem_used_gb} GB`);
+    setStatBar('stat-gpu-vram-bar', gpu.mem_percent, 70, 90);
+    setText('stat-gpu-vram-sub', `${t('stats.of')} ${gpu.mem_total_gb} GB · ${Math.round(gpu.mem_percent)}%`);
+  }
+  if (gpu.temperature_c !== undefined) {
+    setText('stat-gpu-temp', `${gpu.temperature_c}°C`);
+    setStatBar('stat-gpu-temp-bar', gpu.temperature_c, 70, 80);
+    setText('stat-gpu-power', gpu.power_w ? `${gpu.power_w} W / ${gpu.power_limit_w} W` : ' ');
+  }
+}
+
+// Filter / search matching
+function matchesFilter(agent, filter) {
+  if (filter === 'running') return !!agent.is_running;
+  if (filter === 'web_app') return !!agent.port || agent.category === 'web_app';
+  if (filter === 'cli') return agent.type === 'cli';
+  return true;
 }
 
 // Update filter counters
 function updateCounters() {
-  const countAll = document.getElementById('count-all');
-  const countRunning = document.getElementById('count-running');
-
-  if (countAll) countAll.textContent = agentsData.length;
-  if (countRunning) {
-    const active = agentsData.filter(a => a.is_running).length;
-    countRunning.textContent = active;
-  }
+  ['all', 'running', 'web_app', 'cli'].forEach(filter => {
+    const el = document.getElementById(`count-${filter}`);
+    if (el) el.textContent = agentsData.filter(a => matchesFilter(a, filter)).length;
+  });
 }
 
 // Filter and search
 function setFilter(filter) {
   currentFilter = filter;
   document.querySelectorAll('.tab-btn').forEach(btn => {
-    if (btn.dataset.tab === filter) {
-      btn.className = 'tab-btn active px-3 py-1.5 rounded-lg font-medium transition text-white bg-blue-600';
-    } else {
-      btn.className = 'tab-btn px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white';
-    }
+    const isActive = btn.dataset.tab === filter;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-selected', isActive);
   });
   renderCards();
 }
@@ -327,16 +355,15 @@ function onSearchChange() {
   renderCards();
 }
 
-// Render cards
+// Render cards (skips the DOM swap when nothing visible changed, so hover/focus survive polling)
+let lastGridHTML = '';
+
 function renderCards() {
   const grid = document.getElementById('agents-grid');
   if (!grid) return;
 
   const filtered = agentsData.filter(agent => {
-    // Filter by tab
-    if (currentFilter === 'running' && !agent.is_running) return false;
-    if (currentFilter === 'web_app' && !agent.port && agent.category !== 'web_app') return false;
-    if (currentFilter === 'cli' && agent.type !== 'cli') return false;
+    if (!matchesFilter(agent, currentFilter)) return false;
 
     // Filter by search
     if (searchQuery) {
@@ -348,229 +375,293 @@ function renderCards() {
     return true;
   });
 
-  if (filtered.length === 0) {
-    grid.innerHTML = `
-      <div class="col-span-full py-16 text-center text-slate-500">
-        <i data-lucide="package-search" class="w-10 h-10 mx-auto text-slate-600 mb-3"></i>
-        <p class="text-sm">Жодного агента не знайдено за заданими критеріями.</p>
+  const html = filtered.length === 0
+    ? `
+      <div class="col-span-full py-16 text-center text-slate-500 dark:text-slate-400">
+        <i data-lucide="package-search" class="w-10 h-10 mx-auto text-slate-400 dark:text-slate-600 mb-3"></i>
+        <p class="text-sm">${esc(t('state.empty'))}</p>
       </div>
-    `;
-    lucide.createIcons();
-    return;
-  }
+    `
+    : filtered.map(agent => buildCardHTML(agent)).join('');
 
-  grid.innerHTML = filtered.map(agent => buildCardHTML(agent)).join('');
+  if (html === lastGridHTML) return;
+  lastGridHTML = html;
+  grid.innerHTML = html;
   lucide.createIcons();
 }
+
+// Status badge
+function buildStatusBadge(agent) {
+  const base = 'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium border';
+  const hint = agent.error_message ? ` title="${esc(agent.error_message)}"` : '';
+
+  if (agent.is_running) {
+    return `
+      <span class="${base} bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        ${t('status.running')}
+      </span>`;
+  }
+  if (agent.status === 'MISSING') {
+    return `
+      <span class="${base} bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25"${hint}>
+        <i data-lucide="triangle-alert" class="w-3 h-3"></i>
+        ${t('status.missing')}
+      </span>`;
+  }
+  if (agent.status === 'FAILED') {
+    return `
+      <span class="${base} bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25"${hint}>
+        <i data-lucide="circle-alert" class="w-3 h-3"></i>
+        ${t('status.failed')}
+      </span>`;
+  }
+  if (agent.type === 'cli') {
+    return `
+      <span class="${base} bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border-cyan-500/25">
+        <i data-lucide="zap" class="w-3 h-3"></i>
+        ${t('status.ready')}
+      </span>`;
+  }
+  return `
+    <span class="${base} bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700">
+      <span class="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-500"></span>
+      ${t('status.stopped')}
+    </span>`;
+}
+
+const TYPE_CHIP_COLORS = {
+  daemon: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+  systemd: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+  docker: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+  cli: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20'
+};
+const TYPE_CHIP_FALLBACK = 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700';
 
 // Single card template
 function buildCardHTML(agent) {
   const isRunning = agent.is_running;
   const isCli = agent.type === 'cli';
+  const name = esc(getAgentName(agent));
+  const idArg = esc(JSON.stringify(agent.id));
 
-  // Status badge
-  let statusBadge = '';
-  if (isRunning) {
-    statusBadge = `
-      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-1.5"></span>
-        ${t('status.running')}
-      </span>`;
-  } else if (isCli) {
-    statusBadge = `
-      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-        <i data-lucide="zap" class="w-3 h-3 mr-1"></i>
-        ${t('status.ready')}
-      </span>`;
-  } else if (agent.status === 'FAILED') {
-    statusBadge = `
-      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
-        ${t('status.failed')}
-      </span>`;
-  } else {
-    statusBadge = `
-      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-        ${t('status.stopped')}
-      </span>`;
-  }
-
-  // Type tag
-  const typeColors = {
-    daemon: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
-    systemd: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
-    docker: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
-    cli: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20'
-  };
-  const typeClass = typeColors[agent.type] || 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700';
+  const typeClass = TYPE_CHIP_COLORS[agent.type] || TYPE_CHIP_FALLBACK;
+  const portChip = agent.port
+    ? `<span class="font-mono text-[10px] px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">:${esc(agent.port)}</span>`
+    : '';
 
   // Metrics
   let metricsHTML = '';
   if (isRunning) {
+    const memory = agent.memory_mb ? `${agent.memory_mb.toFixed(0)} MB` : '—';
+    const cpu = agent.cpu_percent != null ? `${agent.cpu_percent}%` : '—';
     metricsHTML = `
-      <div class="grid grid-cols-3 gap-2 py-2 px-3 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800/80 text-xs">
-        <div>
+      <div class="mt-3 grid grid-cols-3 gap-2 py-2 px-3 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800/80 text-xs">
+        <div class="min-w-0">
           <span class="text-slate-400 dark:text-slate-500 block text-[10px]">${t('card.memory')}</span>
-          <span class="font-mono text-slate-700 dark:text-slate-200">${agent.memory_mb ? agent.memory_mb.toFixed(0) + ' MB' : 'active'}</span>
+          <span class="font-mono text-slate-700 dark:text-slate-200">${esc(memory)}</span>
         </div>
-        <div>
+        <div class="min-w-0">
           <span class="text-slate-400 dark:text-slate-500 block text-[10px]">${t('card.cpu')}</span>
-          <span class="font-mono text-slate-700 dark:text-slate-200">${agent.cpu_percent !== null ? agent.cpu_percent + '%' : '0%'}</span>
+          <span class="font-mono text-slate-700 dark:text-slate-200">${esc(cpu)}</span>
         </div>
-        <div>
+        <div class="min-w-0">
           <span class="text-slate-400 dark:text-slate-500 block text-[10px]">${t('card.uptime')}</span>
-          <span class="font-mono text-slate-700 dark:text-slate-200">${agent.uptime || '—'}</span>
+          <span class="font-mono text-slate-700 dark:text-slate-200 truncate block">${esc(agent.uptime || '—')}</span>
         </div>
       </div>
     `;
   }
 
-  // URL link if port
+  // Open-UI link: only live when the service is running, otherwise it would lead to a dead page
   let urlButton = '';
   if (agent.port) {
     const mainUrl = agent.urls && agent.urls.length > 0 ? agent.urls[0].url : `http://localhost:${agent.port}`;
-    urlButton = `
-      <a href="${mainUrl}" target="_blank" title="${t('btn.open_ui')}" class="p-2 bg-slate-100 hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-blue-600/30 hover:text-blue-600 dark:hover:text-blue-400 text-slate-600 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 transition flex items-center justify-center">
+    const openTitle = esc(t('btn.open_ui'));
+    urlButton = isRunning
+      ? `
+      <a href="${esc(mainUrl)}" target="_blank" rel="noopener" title="${openTitle}" aria-label="${openTitle}" class="icon-btn hover:!text-blue-600 dark:hover:!text-blue-400">
         <i data-lucide="external-link" class="w-4 h-4"></i>
-      </a>
-    `;
+      </a>`
+      : `
+      <span aria-disabled="true" title="${openTitle}" class="icon-btn !shadow-none opacity-40 cursor-not-allowed hover:!bg-slate-100 dark:hover:!bg-slate-800">
+        <i data-lucide="external-link" class="w-4 h-4"></i>
+      </span>`;
   }
+
+  const logsButton = `
+    <button onclick="openLogsModal(${idArg})" class="icon-btn" title="${esc(t('btn.logs'))}" aria-label="${esc(t('btn.logs'))}">
+      <i data-lucide="file-text" class="w-4 h-4"></i>
+    </button>`;
+  const actionBase = 'flex-1 h-9 px-3 inline-flex items-center justify-center gap-1.5 rounded-lg border text-xs font-medium transition';
 
   // Action buttons
   let controlButtons = '';
   if (isCli) {
     controlButtons = `
-      <div class="text-xs text-slate-500 dark:text-slate-400 font-mono flex items-center space-x-1">
-        <i data-lucide="terminal" class="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400"></i>
-        <span>agents run ${agent.id}</span>
+      <div class="flex w-full items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 px-2.5 py-2 font-mono text-xs text-slate-600 dark:text-slate-300">
+        <i data-lucide="terminal" class="w-3.5 h-3.5 shrink-0 text-cyan-500 dark:text-cyan-400"></i>
+        <span class="truncate">agents run ${esc(agent.id)}</span>
       </div>
     `;
   } else if (isRunning) {
     controlButtons = `
-      <div class="flex items-center space-x-2 w-full">
-        <button onclick="stopAgent('${agent.id}')" class="flex-1 py-1.5 px-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-300 text-xs font-medium rounded-lg border border-rose-500/30 transition flex items-center justify-center space-x-1.5">
+      <div class="flex items-center gap-2 w-full">
+        <button onclick="stopAgent(${idArg})" class="${actionBase} bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-300 border-rose-500/30">
           <i data-lucide="square" class="w-3.5 h-3.5"></i>
           <span>${t('btn.stop')}</span>
         </button>
-        <button onclick="restartAgent('${agent.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 transition" title="${t('btn.restart')}">
+        <button onclick="restartAgent(${idArg})" class="icon-btn" title="${esc(t('btn.restart'))}" aria-label="${esc(t('btn.restart'))}">
           <i data-lucide="rotate-cw" class="w-4 h-4"></i>
         </button>
-        <button onclick="openLogsModal('${agent.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 transition" title="${t('btn.logs')}">
-          <i data-lucide="file-text" class="w-4 h-4"></i>
-        </button>
+        ${logsButton}
         ${urlButton}
       </div>
     `;
   } else {
     controlButtons = `
-      <div class="flex items-center space-x-2 w-full">
-        <button onclick="startAgent('${agent.id}')" class="flex-1 py-1.5 px-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 text-xs font-medium rounded-lg border border-emerald-500/30 transition flex items-center justify-center space-x-1.5">
+      <div class="flex items-center gap-2 w-full">
+        <button onclick="startAgent(${idArg})" class="${actionBase} bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border-emerald-500/30">
           <i data-lucide="play" class="w-3.5 h-3.5"></i>
           <span>${t('btn.start')}</span>
         </button>
-        <button onclick="openLogsModal('${agent.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 transition" title="${t('btn.logs')}">
-          <i data-lucide="file-text" class="w-4 h-4"></i>
-        </button>
+        ${logsButton}
         ${urlButton}
       </div>
     `;
   }
 
+  const borderClass = isRunning
+    ? 'border-emerald-500/30 dark:border-emerald-500/25'
+    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700';
+
   return `
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-2xl p-4 shadow-sm transition flex flex-col justify-between space-y-4">
-      <div>
-        <div class="flex items-start justify-between gap-2 mb-2">
-          <div>
-            <div class="flex items-center space-x-2">
-              <h3 class="font-bold text-slate-900 dark:text-white text-sm tracking-tight" title="${getAgentName(agent)}">${getAgentName(agent)}</h3>
-              <span class="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded border ${typeClass}">${agent.type}</span>
+    <article class="flex flex-col gap-4 bg-white dark:bg-slate-900 border ${borderClass} rounded-2xl p-4 shadow-sm transition">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <h3 class="font-bold text-slate-900 dark:text-white text-sm tracking-tight leading-snug line-clamp-2 break-words" title="${name}">${name}</h3>
+            <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+              <span class="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded border ${typeClass}">${esc(agent.type)}</span>
+              <span class="text-[11px] font-mono text-slate-400 dark:text-slate-500">${esc(agent.id)}</span>
+              ${portChip}
             </div>
-            <span class="text-xs font-mono text-slate-400 dark:text-slate-500">ID: ${agent.id}</span>
           </div>
-          <div>${statusBadge}</div>
+          ${buildStatusBadge(agent)}
         </div>
-        <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mb-3 min-h-[32px]">${getAgentDesc(agent)}</p>
+        <p class="mt-3 text-xs leading-relaxed text-slate-500 dark:text-slate-400 line-clamp-2" title="${esc(getAgentDesc(agent))}">${esc(getAgentDesc(agent))}</p>
         ${metricsHTML}
       </div>
 
       <div class="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
         ${controlButtons}
       </div>
-    </div>
+    </article>
   `;
 }
 
 // Agent Actions
-async function startAgent(id) {
-  showToast(`Запуск ${id}...`, 'info');
+async function runAgentAction(id, action, progressKey) {
+  showToast(tf(progressKey, { id }), 'info');
   try {
-    const res = await fetch(`/api/agents/${id}/start`, { method: 'POST' });
+    const res = await fetch(`/api/agents/${encodeURIComponent(id)}/${action}`, { method: 'POST' });
     const data = await res.json();
-    if (data.ok) {
-      showToast(`✅ ${data.message}`, 'success');
-      fetchStatus();
-    } else {
-      showToast(`❌ ${data.message}`, 'error');
-    }
+    showToast(data.message, data.ok ? 'success' : 'error');
+    if (data.ok) fetchStatus();
   } catch (err) {
-    showToast(`Помилка: ${err}`, 'error');
+    showToast(tf('toast.error', { err }), 'error');
   }
 }
 
-async function stopAgent(id) {
-  showToast(`Зупинка ${id}...`, 'info');
-  try {
-    const res = await fetch(`/api/agents/${id}/stop`, { method: 'POST' });
-    const data = await res.json();
-    if (data.ok) {
-      showToast(`✅ ${data.message}`, 'success');
-      fetchStatus();
-    } else {
-      showToast(`❌ ${data.message}`, 'error');
-    }
-  } catch (err) {
-    showToast(`Помилка: ${err}`, 'error');
-  }
-}
-
-async function restartAgent(id) {
-  showToast(`Перезапуск ${id}...`, 'info');
-  try {
-    const res = await fetch(`/api/agents/${id}/restart`, { method: 'POST' });
-    const data = await res.json();
-    if (data.ok) {
-      showToast(`✅ ${data.message}`, 'success');
-      fetchStatus();
-    } else {
-      showToast(`❌ ${data.message}`, 'error');
-    }
-  } catch (err) {
-    showToast(`Помилка: ${err}`, 'error');
-  }
-}
+function startAgent(id) { return runAgentAction(id, 'start', 'toast.starting'); }
+function stopAgent(id) { return runAgentAction(id, 'stop', 'toast.stopping'); }
+function restartAgent(id) { return runAgentAction(id, 'restart', 'toast.restarting'); }
 
 async function batchAction(action) {
-  showToast(`Виконується дія: ${action}...`, 'info');
+  showToast(t('toast.batch_running'), 'info');
   try {
     const res = await fetch(`/api/batch/${action}`, { method: 'POST' });
     const data = await res.json();
     if (data.ok) {
-      showToast('Групову дію виконано!', 'success');
+      showToast(t('toast.batch_done'), 'success');
       fetchStatus();
     }
   } catch (err) {
-    showToast(`Помилка: ${err}`, 'error');
+    showToast(tf('toast.error', { err }), 'error');
   }
 }
 
+// Modal helpers
+let backdropMouseDown = false;
+
+document.addEventListener('mousedown', (e) => {
+  backdropMouseDown = e.target.classList.contains('modal-backdrop');
+});
+
+function openModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (!modal) return;
+  modal.classList.add('open');
+  document.body.classList.add('overflow-hidden');
+}
+
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) modal.classList.remove('open');
+  if (!document.querySelector('.modal-backdrop.open')) {
+    document.body.classList.remove('overflow-hidden');
+  }
+}
+
+// Close only on a real click on the dimmed area, not when a text selection drag ends there
+function onBackdropClick(event, modalId) {
+  if (event.target === event.currentTarget && backdropMouseDown) closeModal(modalId);
+}
+
 // Log Viewer
+const ANSI_COLORS = {
+  30: '#64748b', 31: '#f87171', 32: '#4ade80', 33: '#fbbf24', 34: '#60a5fa', 35: '#c084fc', 36: '#22d3ee', 37: '#e2e8f0',
+  90: '#94a3b8', 91: '#fca5a5', 92: '#86efac', 93: '#fde68a', 94: '#93c5fd', 95: '#d8b4fe', 96: '#67e8f9', 97: '#f8fafc'
+};
+
+// Turn ANSI SGR color codes in raw log text into styled spans (other escape sequences are dropped)
+function ansiToHtml(raw) {
+  const parts = esc(raw).split(/\x1b\[([0-9;?]*)([A-Za-z])/);
+  let fg = null;
+  let bold = false;
+  let html = '';
+
+  for (let i = 0; i < parts.length; i += 3) {
+    const text = parts[i];
+    if (text) {
+      const style = [fg ? `color:${fg}` : '', bold ? 'font-weight:600' : ''].filter(Boolean).join(';');
+      html += style ? `<span style="${style}">${text}</span>` : text;
+    }
+    if (parts[i + 2] !== 'm') continue;
+
+    const codes = (parts[i + 1] || '0').split(';').map(Number);
+    for (let c = 0; c < codes.length; c++) {
+      const code = codes[c];
+      if (code === 0) { fg = null; bold = false; }
+      else if (code === 1) bold = true;
+      else if (code === 22) bold = false;
+      else if (code === 39) fg = null;
+      else if (ANSI_COLORS[code]) fg = ANSI_COLORS[code];
+      else if (code === 38 || code === 48) c += codes[c + 1] === 5 ? 2 : 4; // skip 256-color / truecolor args
+    }
+  }
+  return html;
+}
+
 function openLogsModal(id) {
   currentLogAgentId = id;
-  const modal = document.getElementById('modal-logs');
   const title = document.getElementById('modal-logs-title');
+  const container = document.getElementById('logs-content');
   const ag = agentsData.find(a => a.id === id);
   const agentName = ag ? getAgentName(ag) : id;
   if (title) title.textContent = `${t('modal.logs.title')}: ${agentName}`;
-  if (modal) modal.classList.remove('hidden');
+  if (container) container.textContent = t('modal.logs.loading');
+  openModal('modal-logs');
   fetchLogs(id);
 }
 
@@ -581,29 +672,67 @@ async function fetchLogs(id) {
   const lines = countSelect ? countSelect.value : 50;
 
   try {
-    const res = await fetch(`/api/agents/${id}/logs?lines=${lines}`);
+    const res = await fetch(`/api/agents/${encodeURIComponent(id)}/logs?lines=${lines}`);
     const data = await res.json();
     if (data.ok && container) {
-      const text = (data.lines || []).join('\n') || 'Логи порожні.';
-      container.textContent = text;
+      const text = (data.lines || []).join('\n');
+      if (text.trim()) {
+        container.innerHTML = ansiToHtml(text);
+      } else {
+        container.textContent = t('modal.logs.empty');
+      }
       container.scrollTop = container.scrollHeight;
     }
   } catch (err) {
-    if (container) container.textContent = `Помилка завантаження логів: ${err}`;
+    if (container) container.textContent = tf('modal.logs.error', { err });
   }
 }
 
 // Discovery Scan
+let scanCandidates = [];
+
+function buildScanRowHTML(c, index) {
+  const typeClass = TYPE_CHIP_COLORS[c.type] || TYPE_CHIP_FALLBACK;
+  // The same app can be found under another id (project folder vs systemd unit): name the registered one
+  const registeredLabel = c.registered_as && c.registered_as !== c.id
+    ? tf('modal.scan.registered_as', { id: c.registered_as })
+    : t('modal.scan.registered');
+  const action = c.is_registered
+    ? `<span class="inline-flex max-w-[11rem] items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs leading-tight">
+        <i data-lucide="check" class="w-3.5 h-3.5 shrink-0 text-emerald-500"></i><span class="break-words min-w-0">${esc(registeredLabel)}</span>
+      </span>`
+    : `<button onclick="registerFromScan(${index})" class="btn-primary">
+        <i data-lucide="plus" class="w-3.5 h-3.5"></i>${esc(t('modal.scan.add'))}
+      </button>`;
+
+  return `
+    <div class="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 flex items-start sm:items-center justify-between gap-3 text-xs ${c.is_registered ? 'opacity-70' : ''}">
+      <div class="min-w-0 flex-1">
+        <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span class="font-bold text-sm text-slate-900 dark:text-white break-words">${esc(c.name)}</span>
+          <span class="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded border ${typeClass}">${esc(c.type)}</span>
+          ${c.port ? `<span class="font-mono text-[10px] px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">:${esc(c.port)}</span>` : ''}
+        </div>
+        <p class="mt-1 text-slate-600 dark:text-slate-400 line-clamp-2 break-words">${esc(c.description || '—')}</p>
+        <p class="mt-1.5 flex items-center gap-1.5 font-mono text-[10px] text-slate-400 dark:text-slate-500" title="${esc(c.working_dir || '')}">
+          <span class="shrink-0 rounded bg-slate-200 dark:bg-slate-800 px-1 py-px">${esc(c.id)}</span>
+          <span class="truncate">${esc(c.working_dir || '')}</span>
+        </p>
+      </div>
+      <div class="shrink-0">${action}</div>
+    </div>
+  `;
+}
+
 async function openScanModal() {
-  const modal = document.getElementById('modal-scan');
   const container = document.getElementById('scan-results-container');
-  if (modal) modal.classList.remove('hidden');
+  openModal('modal-scan');
 
   if (container) {
     container.innerHTML = `
-      <div class="text-center py-8 text-slate-500">
-        <i data-lucide="loader-2" class="w-6 h-6 animate-spin text-blue-500 mx-auto mb-2"></i>
-        Пошук мікрододатків у системних директоріях...
+      <div class="flex flex-col items-center gap-2 py-10 text-sm text-center text-slate-400 dark:text-slate-500">
+        <i data-lucide="loader-circle" class="w-6 h-6 animate-spin text-blue-500"></i>
+        <span>${esc(t('modal.scan.loading'))}</span>
       </div>`;
     lucide.createIcons();
   }
@@ -612,45 +741,24 @@ async function openScanModal() {
     const res = await fetch('/api/scan');
     const data = await res.json();
     if (data.ok && container) {
-      const candidates = data.candidates || [];
-      if (candidates.length === 0) {
-        container.innerHTML = `<p class="text-center text-slate-400 py-6 text-xs">Мікрододатків не знайдено.</p>`;
+      // Not-yet-registered candidates first; sort is stable so the scan order is kept within each group
+      scanCandidates = (data.candidates || []).slice().sort((a, b) => Number(!!a.is_registered) - Number(!!b.is_registered));
+      if (scanCandidates.length === 0) {
+        container.innerHTML = `<p class="text-center text-slate-400 py-6 text-xs">${esc(t('modal.scan.empty'))}</p>`;
         return;
       }
 
-      container.innerHTML = candidates.map(c => {
-        const isReg = c.is_registered;
-        return `
-          <div class="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 text-xs">
-            <div>
-              <div class="flex items-center space-x-2">
-                <span class="font-bold text-slate-900 dark:text-white">${c.name}</span>
-                <span class="font-mono text-slate-400 dark:text-slate-500 text-[10px]">(${c.id})</span>
-                <span class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400 text-[10px] uppercase font-mono">${c.type}</span>
-                ${c.port ? `<span class="text-blue-500 dark:text-blue-400 font-mono text-[10px]">:${c.port}</span>` : ''}
-              </div>
-              <p class="text-slate-600 dark:text-slate-400 text-xs mt-0.5">${c.description || '—'}</p>
-              <span class="font-mono text-[10px] text-slate-400 dark:text-slate-600 block mt-1">${c.working_dir || ''}</span>
-            </div>
-            <div>
-              ${isReg
-                ? `<span class="px-2 py-1 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs">${t('modal.scan.registered')}</span>`
-                : `<button onclick='registerFromScan(${JSON.stringify(c)})' class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition font-medium text-xs shadow-sm">
-                    ${t('btn.add')}
-                  </button>`
-              }
-            </div>
-          </div>
-        `;
-      }).join('');
+      container.innerHTML = scanCandidates.map((c, i) => buildScanRowHTML(c, i)).join('');
       lucide.createIcons();
     }
   } catch (err) {
-    if (container) container.innerHTML = `<p class="text-rose-400 text-center py-6 text-xs">Помилка сканування: ${err}</p>`;
+    if (container) container.innerHTML = `<p class="text-rose-500 dark:text-rose-400 text-center py-6 text-xs">${esc(tf('modal.scan.error', { err }))}</p>`;
   }
 }
 
-async function registerFromScan(cand) {
+async function registerFromScan(index) {
+  const cand = scanCandidates[index];
+  if (!cand) return;
   try {
     const res = await fetch('/api/agents/add', {
       method: 'POST',
@@ -659,21 +767,24 @@ async function registerFromScan(cand) {
     });
     const data = await res.json();
     if (data.ok) {
-      showToast(`✅ Додано ${cand.name}`, 'success');
+      showToast(tf('toast.added', { name: cand.name }), 'success');
       openScanModal();
       fetchStatus();
     } else {
-      showToast(`❌ ${data.message}`, 'error');
+      showToast(data.message, 'error');
     }
   } catch (err) {
-    showToast(`Помилка: ${err}`, 'error');
+    showToast(tf('toast.error', { err }), 'error');
   }
 }
 
 // Add Custom Modal
 function openAddModal() {
-  const modal = document.getElementById('modal-add');
-  if (modal) modal.classList.remove('hidden');
+  openModal('modal-add');
+  setTimeout(() => {
+    const first = document.getElementById('add-id');
+    if (first) first.focus();
+  }, 50);
 }
 
 async function submitAddAgent(e) {
@@ -706,19 +817,14 @@ async function submitAddAgent(e) {
     });
     const data = await res.json();
     if (data.ok) {
-      showToast(`✅ Агента '${name}' успішно додано!`, 'success');
+      showToast(tf('toast.added', { name }), 'success');
+      document.getElementById('add-agent-form').reset();
       closeModal('modal-add');
       fetchStatus();
     } else {
-      showToast(`❌ ${data.message}`, 'error');
+      showToast(data.message, 'error');
     }
   } catch (err) {
-    showToast(`Помилка: ${err}`, 'error');
+    showToast(tf('toast.error', { err }), 'error');
   }
-}
-
-// Modal helper
-function closeModal(modalId) {
-  const modal = document.getElementById(modalId);
-  if (modal) modal.classList.add('hidden');
 }

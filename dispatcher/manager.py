@@ -16,7 +16,8 @@ from .config import (
     load_settings,
     PIDS_DIR,
     LOGS_DIR,
-    HOME
+    HOME,
+    EXCLUDED_AGENT_IDS
 )
 from .models import Agent, AgentLiveStatus
 from .system_info import (
@@ -713,13 +714,16 @@ class AgentManager:
     def scan_for_microapps(self) -> List[Dict[str, Any]]:
         """Run discovery scan across configured directories."""
         dirs = self.settings.get("scan_dirs", [])
-        return discover_all(dirs, set(self.agents.keys()))
+        return discover_all(dirs, list(self.agents.values()))
 
     def add_agent(self, data: Dict[str, Any]) -> Tuple[bool, str]:
         """Register a new agent."""
         agent_id = data.get("id", "").strip().lower()
         if not agent_id:
             return False, "Agent ID cannot be empty"
+
+        if agent_id in EXCLUDED_AGENT_IDS:
+            return False, f"'{agent_id}' is an AI coding CLI and is excluded from the dispatcher"
 
         if agent_id in self.agents:
             return False, f"Agent '{agent_id}' is already registered"

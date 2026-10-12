@@ -25,6 +25,10 @@ DEFAULT_SETTINGS = {
     "auto_refresh_sec": 3
 }
 
+# General-purpose AI coding CLIs are tools, not user agents or micro-apps:
+# they are never part of the defaults, never offered by the scanner and cannot be registered.
+EXCLUDED_AGENT_IDS = frozenset({"agy", "claude", "codex", "grok"})
+
 DEFAULT_AGENTS: List[Dict[str, Any]] = []
 
 

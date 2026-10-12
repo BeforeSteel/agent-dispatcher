@@ -97,7 +97,8 @@ agents web --port 8800
    - Приклад: `Example vector database` (`example-vector-db`).
 4. **`cli` (Консольні агенти):**
    - Інтерактивний виклик з передачею довільних аргументів.
-   - Приклад: `Example command-line tool`, `Google Antigravity` (`agy`), `Claude Code` (`claude`), `Codex` (`codex`).
+   - Приклад: `Example command-line tool`, `Example CLI application`.
+   - AI-консолі загального призначення (`claude`, `codex`, `agy`, `grok`) свідомо виключені: диспетчер лише для власних агентів і мікрододатків.
 
 ---
 

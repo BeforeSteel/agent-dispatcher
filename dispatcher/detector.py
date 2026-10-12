@@ -8,7 +8,29 @@ import subprocess
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
+from .config import EXCLUDED_AGENT_IDS
+
 HOME = Path.home()
+
+
+def _clean_markup(text: str) -> str:
+    """Strip inline HTML and markdown syntax, leaving plain text."""
+    text = re.sub(r'<!--.*?-->', ' ', text)
+    text = re.sub(r'<[^>]*>', ' ', text)
+    text = re.sub(r'!\[[^\]]*\]\([^)]*\)', '', text)         # images
+    text = re.sub(r'\[\s*\]\([^)]*\)', '', text)               # links left empty by image removal
+    text = re.sub(r'\[([^\]]+)\]\([^)]*\)', r'\1', text)       # [label](url) -> label
+    text = re.sub(r'\[([^\]]+)\]\[[^\]]*\]', r'\1', text)       # [label][ref] -> label
+    text = re.sub(r'\*\*|__|`|(?<!\w)\*|\*(?!\w)', '', text)  # emphasis / inline code
+    return re.sub(r'\s+', ' ', text).strip()
+
+
+def _shorten(text: str, limit: int = 120) -> str:
+    """Cut text at a word boundary and add an ellipsis if it was truncated."""
+    if len(text) <= limit:
+        return text
+    cut = text[:limit].rsplit(" ", 1)[0].rstrip(" ,;:-—")
+    return (cut or text[:limit]) + "…"
 
 
 def extract_readme_info(dir_path: Path) -> Dict[str, str]:
@@ -17,22 +39,34 @@ def extract_readme_info(dir_path: Path) -> Dict[str, str]:
     for rm in readme_candidates:
         if rm.exists():
             try:
-                lines = rm.read_text(encoding="utf-8", errors="ignore").splitlines()
+                text = rm.read_text(encoding="utf-8", errors="ignore")
+                lines = text.splitlines()
                 title = ""
                 desc = ""
+                in_fence = False
+                # Some READMEs keep the real title in an HTML <h1> (centered logo blocks)
+                m_h1 = re.search(r'<h1[^>]*>(.*?)</h1>', text, re.IGNORECASE | re.DOTALL)
+                html_title = _clean_markup(m_h1.group(1)) if m_h1 else ""
                 for line in lines:
                     line = line.strip()
-                    if not line:
+                    if line.startswith("```"):
+                        in_fence = not in_fence
+                        continue
+                    if in_fence or not line:
                         continue
                     if line.startswith("# ") and not title:
-                        title = line.lstrip("# ").strip()
+                        title = _clean_markup(line.lstrip("# "))
                         # Remove leading icons/emojis if desirable or keep
                         title = re.sub(r'^[^\w\s]+', '', title).strip()
-                    elif not line.startswith("#") and not line.startswith("---") and not desc:
-                        desc = line[:120].strip()
-                        if title and desc:
-                            break
-                return {"title": title, "desc": desc}
+                        if not re.match(r'\w{2}', title):
+                            title = ""
+                    elif not line.startswith(("#", "---", "===", ">", "|", "<!--")) and not desc:
+                        candidate = _shorten(_clean_markup(line))
+                        if candidate and candidate not in (title, html_title):
+                            desc = candidate
+                            if (title or html_title) and desc:
+                                break
+                return {"title": title or html_title, "desc": desc}
             except Exception:
                 pass
     return {"title": "", "desc": ""}
@@ -240,21 +274,78 @@ def scan_systemd_user_services() -> List[Dict[str, Any]]:
     return services
 
 
-def discover_all(scan_dirs: List[str], registered_ids: Optional[set] = None) -> List[Dict[str, Any]]:
-    """Combine filesystem scans and systemd units, marking which are already registered."""
-    if registered_ids is None:
-        registered_ids = set()
+def _norm_id(value: Optional[str]) -> str:
+    """Id without case and separators, so `example-service` and `example-service` compare equal."""
+    return re.sub(r'[^a-z0-9]', '', (value or "").lower())
+
+
+def _norm_path(value: Optional[str]) -> Optional[str]:
+    if not value:
+        return None
+    return os.path.realpath(os.path.expanduser(value))
+
+
+def find_registered_match(candidate: Dict[str, Any], registered: List[Any]) -> Optional[str]:
+    """Return the id of the registered agent that this candidate is a duplicate of, if any.
+
+    One app is often discovered several ways (project folder, systemd unit) under different ids,
+    so the id alone is not enough. Signals, strongest first: same id, same systemd unit,
+    same working directory, same id ignoring case and `-`/`_`.
+    Ports are deliberately not used: they are guessed from scripts and shared by unrelated apps,
+    so a port match could hide a genuinely new app.
+    """
+    cand_id = candidate["id"]
+    cand_key = _norm_id(cand_id)
+    cand_unit = candidate.get("systemd_unit")
+    cand_dir = _norm_path(candidate.get("working_dir"))
+
+    checks = (
+        lambda a: a.id == cand_id,
+        lambda a: bool(cand_unit) and a.systemd_unit == cand_unit,
+        lambda a: bool(cand_dir) and _norm_path(a.working_dir) == cand_dir,
+        lambda a: bool(cand_key) and _norm_id(a.id) == cand_key,
+    )
+    for check in checks:
+        for agent in registered:
+            if check(agent):
+                return agent.id
+    return None
+
+
+def discover_all(scan_dirs: List[str], registered: Optional[List[Any]] = None) -> List[Dict[str, Any]]:
+    """Combine filesystem scans and systemd units, marking which are already registered.
+
+    `registered` is the list of Agent objects already in the registry. Each candidate gets
+    `is_registered` and `registered_as` (the matching agent's id). When several candidates
+    are the same registered app, a single row is kept, preferring the one with the exact id.
+    """
+    registered = registered or []
 
     candidates = scan_directories(scan_dirs) + scan_systemd_user_services()
     seen_ids = set()
     unique_candidates = []
+    row_for_registered: Dict[str, Dict[str, Any]] = {}
 
     for c in candidates:
         cid = c["id"]
-        if cid in seen_ids:
+        if cid in EXCLUDED_AGENT_IDS or cid in seen_ids:
             continue
         seen_ids.add(cid)
-        c["is_registered"] = (cid in registered_ids)
-        unique_candidates.append(c)
+
+        match = find_registered_match(c, registered)
+        c["is_registered"] = match is not None
+        c["registered_as"] = match
+
+        if match is None:
+            unique_candidates.append(c)
+            continue
+
+        kept = row_for_registered.get(match)
+        if kept is None:
+            row_for_registered[match] = c
+            unique_candidates.append(c)
+        elif cid == match and kept["id"] != match:
+            unique_candidates[unique_candidates.index(kept)] = c
+            row_for_registered[match] = c
 
     return unique_candidates

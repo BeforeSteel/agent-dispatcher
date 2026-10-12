@@ -304,6 +304,9 @@ def cmd_add(manager: AgentManager, args):
     if args.id:
         candidates = manager.scan_for_microapps()
         match = next((c for c in candidates if c["id"] == args.id), None)
+        if match and match.get("is_registered"):
+            print(f"{C_YELLOW}⚠️  '{args.id}' вже зареєстрований як '{match['registered_as']}'.{C_RESET}")
+            return
         if match:
             ok, msg = manager.add_agent(match)
             if ok:
