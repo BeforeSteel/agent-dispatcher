@@ -19,7 +19,8 @@ DEFAULT_SETTINGS = {
     "web_host": "0.0.0.0",
     "theme": "dark",
     "scan_dirs": [
-        str(HOME / "Projects")
+        str(HOME / "Projects"),
+        str(HOME / "Downloads")
     ],
     "auto_refresh_sec": 3
 }

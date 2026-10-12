@@ -52,9 +52,17 @@ def extract_port_from_project(dir_path: Path) -> Optional[int]:
             except Exception:
                 pass
 
-    # 2. Check python files (app.py, config.py, server.py)
-    for py_name in ["app.py", "server.py", "config.py", "main.py"]:
-        py_file = dir_path / py_name
+    # 2. Check python files (app.py, config.py, server.py, app/server.py)
+    cand_py_files = [
+        dir_path / "app.py",
+        dir_path / "server.py",
+        dir_path / "config.py",
+        dir_path / "main.py",
+        dir_path / "app" / "server.py",
+        dir_path / "app" / "config.py",
+        dir_path / "app" / "app.py"
+    ]
+    for py_file in cand_py_files:
         if py_file.exists():
             try:
                 text = py_file.read_text(errors="ignore")
@@ -64,12 +72,11 @@ def extract_port_from_project(dir_path: Path) -> Optional[int]:
             except Exception:
                 pass
 
-    # 3. Check run.sh
-    run_sh = dir_path / "run.sh"
-    if run_sh.exists():
+    # 3. Check shell scripts (*.sh, run.sh)
+    for sh_file in dir_path.glob("*.sh"):
         try:
-            text = run_sh.read_text(errors="ignore")
-            m = re.search(r'PORT\s*=\s*["\']?(\d{2,5})["\']?', text, re.IGNORECASE)
+            text = sh_file.read_text(errors="ignore")
+            m = re.search(r'(?:PORT\s*=\s*["\']?|localhost:|127\.0\.0\.1:|:)(\d{4,5})', text, re.IGNORECASE)
             if m:
                 return int(m.group(1))
         except Exception:
@@ -98,7 +105,6 @@ def scan_directories(base_dirs: List[str]) -> List[Dict[str, Any]]:
             continue
 
         try:
-            # Look up to depth 2
             subdirs = [p for p in base_path.iterdir() if p.is_dir() and not p.name.startswith(".")]
         except Exception:
             continue
@@ -109,11 +115,13 @@ def scan_directories(base_dirs: List[str]) -> List[Dict[str, Any]]:
 
             # Check if this directory is a micro-application
             has_app_py = (p / "app.py").exists() or (p / "server.py").exists() or (p / "main.py").exists()
+            has_sub_app = (p / "app" / "server.py").exists() or (p / "app" / "app.py").exists()
             has_run_sh = (p / "run.sh").exists()
+            sh_scripts = [f for f in p.glob("*.sh") if not f.name.startswith(".")]
             has_cli_py = (p / "cli.py").exists()
             has_package_json = (p / "package.json").exists()
 
-            if not (has_app_py or has_run_sh or has_cli_py or has_package_json):
+            if not (has_app_py or has_sub_app or has_run_sh or sh_scripts or has_cli_py or has_package_json):
                 # Check 1 level deeper (e.g. 2026/AI, 2026/corpo)
                 try:
                     deeper = [d for d in p.iterdir() if d.is_dir() and not d.name.startswith(".")]
@@ -121,10 +129,12 @@ def scan_directories(base_dirs: List[str]) -> List[Dict[str, Any]]:
                         if str(deep_p) in seen_dirs:
                             continue
                         d_app = (deep_p / "app.py").exists() or (deep_p / "server.py").exists()
+                        d_sub = (deep_p / "app" / "server.py").exists() or (deep_p / "app" / "app.py").exists()
                         d_run = (deep_p / "run.sh").exists()
+                        d_sh = [f for f in deep_p.glob("*.sh") if not f.name.startswith(".")]
                         d_cli = (deep_p / "cli.py").exists()
-                        if d_app or d_run or d_cli:
-                            cand = _analyze_candidate(deep_p, d_app, d_run, d_cli)
+                        if d_app or d_sub or d_run or d_sh or d_cli:
+                            cand = _analyze_candidate(deep_p, d_app or d_sub, d_run or bool(d_sh), d_cli, d_sh)
                             if cand:
                                 seen_dirs.add(str(deep_p))
                                 results.append(cand)
@@ -132,7 +142,7 @@ def scan_directories(base_dirs: List[str]) -> List[Dict[str, Any]]:
                     pass
                 continue
 
-            cand = _analyze_candidate(p, has_app_py, has_run_sh, has_cli_py)
+            cand = _analyze_candidate(p, has_app_py or has_sub_app, has_run_sh or bool(sh_scripts), has_cli_py, sh_scripts)
             if cand:
                 seen_dirs.add(str(p))
                 results.append(cand)
@@ -140,7 +150,7 @@ def scan_directories(base_dirs: List[str]) -> List[Dict[str, Any]]:
     return results
 
 
-def _analyze_candidate(p: Path, has_app: bool, has_run: bool, has_cli: bool) -> Optional[Dict[str, Any]]:
+def _analyze_candidate(p: Path, has_app: bool, has_run: bool, has_cli: bool, sh_scripts: Optional[List[Path]] = None) -> Optional[Dict[str, Any]]:
     readme = extract_readme_info(p)
     port = extract_port_from_project(p)
     venv = detect_venv(p)
@@ -149,16 +159,26 @@ def _analyze_candidate(p: Path, has_app: bool, has_run: bool, has_cli: bool) -> 
     name = readme["title"] or p.name.replace("_", " ").title()
     desc = readme["desc"] or f"Micro-application in {p.name}"
 
-    cat = "web_app" if (port or has_app) else ("cli_tool" if has_cli else "daemon")
-    app_type = "daemon" if (has_app or has_run) else "cli"
-
+    # If launcher script exists (e.g. "Запустить Идейный Поиск МК.sh")
     start_cmd = None
-    if has_run:
+    if sh_scripts:
+        # Prefer script with 'запуск' or 'run' or 'start'
+        launch_sh = next((s for s in sh_scripts if any(w in s.name.lower() for w in ["запуск", "run", "start"])), sh_scripts[0])
+        start_cmd = f"bash '{launch_sh}'"
+        clean_title = re.sub(r'^(Запустить|Run|Start)\s*', '', launch_sh.stem, flags=re.IGNORECASE).strip()
+        if clean_title and (not readme["title"] or readme["title"] == p.name):
+            name = clean_title
+    elif (p / "run.sh").exists():
         start_cmd = str(p / "run.sh")
+    elif (p / "app" / "server.py").exists():
+        start_cmd = f"uv run --with fastapi --with uvicorn --with pydantic python3 {p / 'app' / 'server.py'}"
     elif has_app:
         py_bin = f"{venv}/bin/python" if venv else "python3"
         start_file = "app.py" if (p / "app.py").exists() else ("server.py" if (p / "server.py").exists() else "main.py")
         start_cmd = f"{py_bin} {start_file}"
+
+    cat = "web_app" if (port or has_app) else ("cli_tool" if has_cli else "daemon")
+    app_type = "daemon" if (has_app or has_run or start_cmd) else "cli"
 
     return {
         "id": agent_id,
