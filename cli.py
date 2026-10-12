@@ -339,6 +339,13 @@ def cmd_health(manager: AgentManager, args):
     if "memory_total_gb" in stats:
         print(f"  {C_BOLD}Оперативна пам'ять:{C_RESET} {stats.get('memory_used_gb')} GB / {stats.get('memory_total_gb')} GB ({stats.get('memory_percent')}%)")
 
+    gpu = stats.get("gpu")
+    if gpu:
+        print(f"\n  {C_BOLD}Відеокарта ({gpu.get('name')}):{C_RESET}")
+        print(f"    • Завантаження GPU:  {C_GREEN}{gpu.get('gpu_util_percent')}%{C_RESET}")
+        print(f"    • Відеопам'ять VRAM: {C_CYAN}{gpu.get('mem_used_gb')} GB{C_RESET} / {gpu.get('mem_total_gb')} GB ({gpu.get('mem_percent')}%)")
+        print(f"    • Температура:       {C_YELLOW}{gpu.get('temperature_c')}°C{C_RESET} (Потужність: {gpu.get('power_w')}W / {gpu.get('power_limit_w')}W)")
+
     disks = stats.get("disks", {})
     if disks:
         print(f"\n  {C_BOLD}Дисковий простір:{C_RESET}")

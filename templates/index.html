@@ -57,23 +57,53 @@
         </div>
       </div>
 
-      <!-- System Stats Bar -->
-      <div class="hidden md:flex items-center space-x-4 bg-slate-950/70 border border-slate-800/80 rounded-xl px-4 py-1.5 text-xs">
-        <div class="flex items-center space-x-1.5" title="CPU">
-          <i data-lucide="cpu" class="w-3.5 h-3.5 text-blue-400"></i>
-          <span class="text-slate-400">CPU:</span>
-          <span id="stat-cpu" class="font-mono font-medium text-slate-200">--%</span>
+      <!-- System & GPU Stats Bar -->
+      <div class="hidden md:flex items-center space-x-3">
+        <!-- CPU / RAM / Host -->
+        <div class="flex items-center space-x-3 bg-slate-950/70 border border-slate-800/80 rounded-xl px-3.5 py-1.5 text-xs">
+          <div class="flex items-center space-x-1.5" title="CPU">
+            <i data-lucide="cpu" class="w-3.5 h-3.5 text-blue-400"></i>
+            <span class="text-slate-400">CPU:</span>
+            <span id="stat-cpu" class="font-mono font-medium text-slate-200">--%</span>
+          </div>
+          <div class="w-px h-3.5 bg-slate-800"></div>
+          <div class="flex items-center space-x-1.5" title="RAM">
+            <i data-lucide="activity" class="w-3.5 h-3.5 text-indigo-400"></i>
+            <span class="text-slate-400">RAM:</span>
+            <span id="stat-ram" class="font-mono font-medium text-slate-200">-- GB</span>
+          </div>
+          <div class="w-px h-3.5 bg-slate-800"></div>
+          <div class="flex items-center space-x-1.5" title="Хост">
+            <i data-lucide="server" class="w-3.5 h-3.5 text-slate-400"></i>
+            <span id="stat-host" class="font-mono text-slate-300">host</span>
+          </div>
         </div>
-        <div class="w-px h-4 bg-slate-800"></div>
-        <div class="flex items-center space-x-1.5" title="RAM">
-          <i data-lucide="activity" class="w-3.5 h-3.5 text-indigo-400"></i>
-          <span class="text-slate-400">RAM:</span>
-          <span id="stat-ram" class="font-mono font-medium text-slate-200">-- GB</span>
-        </div>
-        <div class="w-px h-4 bg-slate-800"></div>
-        <div class="flex items-center space-x-1.5" title="Хост">
-          <i data-lucide="server" class="w-3.5 h-3.5 text-emerald-400"></i>
-          <span id="stat-host" class="font-mono text-slate-300">host</span>
+
+        <!-- GPU Monitor: 3 Основних Параметри (Завантаження, VRAM, Температура) -->
+        <div id="gpu-monitor-bar" class="flex items-center space-x-3 bg-gradient-to-r from-emerald-950/40 via-slate-950/80 to-slate-950/70 border border-emerald-500/30 rounded-xl px-3.5 py-1.5 text-xs shadow-sm shadow-emerald-950/20" title="NVIDIA GPU">
+          <!-- Параметр 1: Завантаження ядра GPU -->
+          <div class="flex items-center space-x-1.5" title="Завантаження GPU ядра">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span class="text-emerald-400 font-bold uppercase text-[10px] tracking-wide">GPU:</span>
+            <span id="stat-gpu-load" class="font-mono font-bold text-emerald-300">--%</span>
+          </div>
+          <div class="w-px h-3.5 bg-slate-800"></div>
+          <!-- Параметр 2: Використання відеопам'яті (VRAM) -->
+          <div class="flex items-center space-x-1.5" title="Відеопам'ять (VRAM)">
+            <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-cyan-400"></i>
+            <span class="text-slate-400">VRAM:</span>
+            <span id="stat-gpu-vram" class="font-mono font-medium text-cyan-300">-- / -- GB</span>
+          </div>
+          <div class="w-px h-3.5 bg-slate-800"></div>
+          <!-- Параметр 3: Температура відеокарти -->
+          <div class="flex items-center space-x-1.5" title="Температура GPU">
+            <i data-lucide="thermometer" class="w-3.5 h-3.5 text-amber-400"></i>
+            <span class="text-slate-400">Temp:</span>
+            <span id="stat-gpu-temp" class="font-mono font-medium text-amber-300">--°C</span>
+          </div>
         </div>
       </div>
 

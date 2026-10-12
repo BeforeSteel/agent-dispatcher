@@ -61,7 +61,7 @@ async function fetchStatus(manual = false) {
   }
 }
 
-// Update Topbar system metrics
+// Update Topbar system metrics (CPU, RAM, Host + GPU)
 function updateSystemStats(sys) {
   if (!sys) return;
   const cpuEl = document.getElementById('stat-cpu');
@@ -76,6 +76,48 @@ function updateSystemStats(sys) {
   }
   if (hostEl && sys.hostname) {
     hostEl.textContent = sys.hostname;
+  }
+
+  // GPU 3 Основних Параметри (Load %, VRAM, Temperature)
+  const gpuBar = document.getElementById('gpu-monitor-bar');
+  const gpuLoadEl = document.getElementById('stat-gpu-load');
+  const gpuVramEl = document.getElementById('stat-gpu-vram');
+  const gpuTempEl = document.getElementById('stat-gpu-temp');
+
+  if (sys.gpu && sys.gpu.available) {
+    if (gpuBar) {
+      gpuBar.classList.remove('hidden');
+      const powerStr = sys.gpu.power_w ? ` • ${sys.gpu.power_w}W / ${sys.gpu.power_limit_w}W` : '';
+      gpuBar.title = `${sys.gpu.name}${powerStr}`;
+    }
+    // Параметр 1: Завантаження GPU %
+    if (gpuLoadEl && sys.gpu.gpu_util_percent !== undefined) {
+      gpuLoadEl.textContent = `${sys.gpu.gpu_util_percent}%`;
+      if (sys.gpu.gpu_util_percent >= 85) {
+        gpuLoadEl.className = 'font-mono font-bold text-rose-400';
+      } else if (sys.gpu.gpu_util_percent >= 50) {
+        gpuLoadEl.className = 'font-mono font-bold text-amber-400';
+      } else {
+        gpuLoadEl.className = 'font-mono font-bold text-emerald-300';
+      }
+    }
+    // Параметр 2: Відеопам'ять VRAM
+    if (gpuVramEl && sys.gpu.mem_used_gb !== undefined) {
+      gpuVramEl.textContent = `${sys.gpu.mem_used_gb} / ${sys.gpu.mem_total_gb} GB`;
+    }
+    // Параметр 3: Температура
+    if (gpuTempEl && sys.gpu.temperature_c !== undefined) {
+      gpuTempEl.textContent = `${sys.gpu.temperature_c}°C`;
+      if (sys.gpu.temperature_c >= 80) {
+        gpuTempEl.className = 'font-mono font-medium text-rose-400';
+      } else if (sys.gpu.temperature_c >= 70) {
+        gpuTempEl.className = 'font-mono font-medium text-amber-400';
+      } else {
+        gpuTempEl.className = 'font-mono font-medium text-amber-300';
+      }
+    }
+  } else if (gpuBar) {
+    gpuBar.classList.add('hidden');
   }
 }
 

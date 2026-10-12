@@ -96,6 +96,43 @@ def get_pid_listening_on_port(port: int) -> Optional[int]:
     return None
 
 
+def get_gpu_stats() -> Optional[Dict[str, Any]]:
+    """Query NVIDIA GPU metrics (Utilization, VRAM, Temperature, Power)."""
+    try:
+        cmd = [
+            "nvidia-smi",
+            "--query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu,power.draw,power.limit,name",
+            "--format=csv,noheader,nounits"
+        ]
+        out = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, timeout=1.5).decode().strip()
+        if not out:
+            return None
+        parts = [p.strip() for p in out.split(",")]
+        if len(parts) >= 4:
+            gpu_util = int(parts[0])
+            mem_used_mib = int(parts[1])
+            mem_total_mib = int(parts[2])
+            temp_c = int(parts[3])
+            power_w = round(float(parts[4]), 1) if len(parts) > 4 and parts[4] else None
+            power_limit_w = round(float(parts[5]), 1) if len(parts) > 5 and parts[5] else None
+            name = parts[6] if len(parts) > 6 else "NVIDIA GPU"
+
+            return {
+                "available": True,
+                "name": name,
+                "gpu_util_percent": gpu_util,
+                "mem_used_gb": round(mem_used_mib / 1024, 1),
+                "mem_total_gb": round(mem_total_mib / 1024, 1),
+                "mem_percent": round((mem_used_mib / mem_total_mib) * 100, 1),
+                "temperature_c": temp_c,
+                "power_w": power_w,
+                "power_limit_w": power_limit_w
+            }
+    except Exception:
+        pass
+    return None
+
+
 def get_system_stats() -> Dict[str, Any]:
     """Collect overall system health and resources."""
     stats: Dict[str, Any] = {
@@ -103,6 +140,11 @@ def get_system_stats() -> Dict[str, Any]:
         "ips": get_network_ips(),
         "timestamp": time.time()
     }
+
+    # GPU Stats
+    gpu = get_gpu_stats()
+    if gpu:
+        stats["gpu"] = gpu
 
     if HAS_PSUTIL:
         try:
