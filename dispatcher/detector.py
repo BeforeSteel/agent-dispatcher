@@ -275,7 +275,7 @@ def scan_systemd_user_services() -> List[Dict[str, Any]]:
 
 
 def _norm_id(value: Optional[str]) -> str:
-    """Id without case and separators, so `example-service` and `example-service` compare equal."""
+    """Id without case and separators, so `my_app` and `my-app` compare equal."""
     return re.sub(r'[^a-z0-9]', '', (value or "").lower())
 
 

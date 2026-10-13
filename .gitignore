@@ -36,6 +36,12 @@ id_ecdsa*
 id_dsa*
 
 # Local runtime data and backups
+/agents.json
+/settings.json
+/audit-reports/
+*.bak
+*.orig
+*~
 *.log
 *.pid
 *.db
