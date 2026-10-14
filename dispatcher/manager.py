@@ -40,6 +40,8 @@ class AgentManager:
         self.agents: Dict[str, Agent] = {
             item["id"]: Agent.from_dict(item) for item in self._raw_agents
         }
+        # psutil.Process objects kept between polls: cpu_percent() measures since the previous call on the same object
+        self._proc_cache: Dict[int, Any] = {}
 
     def reload(self):
         """Reload configuration from disk."""
@@ -362,17 +364,48 @@ class AgentManager:
                 working_dir=agent.working_dir
             )
 
+    def _cached_process(self, pid: int) -> Tuple[Any, bool]:
+        """Return a psutil.Process for pid and whether it was already sampled before."""
+        proc = self._proc_cache.get(pid)
+        if proc is not None and proc.is_running():
+            return proc, True
+        proc = psutil.Process(pid)
+        self._proc_cache[pid] = proc
+        return proc, False
+
     def _get_proc_metrics(self, pid: int) -> Tuple[Optional[float], Optional[float], Optional[str]]:
+        """CPU %, RSS in MB and uptime of a process together with all its descendants.
+
+        The tracked PID is often a wrapper (the `sh -c` used for start_cmd, a launcher script)
+        while the application itself and its workers run as child processes.
+        CPU is None until every process in the tree has a previous sample to compare with.
+        """
         if not HAS_PSUTIL:
             return (None, None, None)
         try:
-            p = psutil.Process(pid)
-            cpu = round(p.cpu_percent(interval=None), 1)
-            mem = round(p.memory_info().rss / (1024 * 1024), 1)
-            uptime = format_uptime(time.time() - p.create_time())
-            return (cpu, mem, uptime)
+            root, root_sampled = self._cached_process(pid)
+            uptime = format_uptime(time.time() - root.create_time())
+            tree = [(root, root_sampled)]
+            for child in root.children(recursive=True):
+                try:
+                    tree.append(self._cached_process(child.pid))
+                except psutil.Error:
+                    continue
         except Exception:
             return (None, None, None)
+
+        rss = 0
+        cpu = 0.0
+        cpu_ready = True
+        for proc, sampled_before in tree:
+            try:
+                with proc.oneshot():
+                    rss += proc.memory_info().rss
+                    cpu += proc.cpu_percent(interval=None)
+                cpu_ready = cpu_ready and sampled_before
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                continue
+        return (round(cpu, 1) if cpu_ready else None, round(rss / (1024 * 1024), 1), uptime)
 
     def get_status(self, agent_id: str, lang: Optional[str] = None) -> AgentLiveStatus:
         """Fetch live status of an agent with optional i18n localization."""
@@ -398,6 +431,8 @@ class AgentManager:
 
     def list_all_status(self, lang: Optional[str] = None) -> List[AgentLiveStatus]:
         """Fetch live status for all registered agents."""
+        if HAS_PSUTIL:
+            self._proc_cache = {pid: p for pid, p in self._proc_cache.items() if p.is_running()}
         return [self.get_status(aid, lang=lang) for aid in self.agents]
 
     def start(self, agent_id: str) -> Tuple[bool, str]:

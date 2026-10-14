@@ -82,7 +82,9 @@ def cmd_list(manager: AgentManager, args):
 
         if s.is_running:
             if s.memory_mb is not None:
-                res_str = f"{s.memory_mb:.0f}MB/{s.cpu_percent:.0f}%"
+                res_str = f"{s.memory_mb:.0f}MB"
+                if s.cpu_percent is not None:
+                    res_str += f"/{s.cpu_percent:.0f}%"
             else:
                 res_str = "active"
             res_fmt = f"{C_GREEN}{res_str:<14}{C_RESET}"
