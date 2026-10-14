@@ -4,18 +4,18 @@ set -e
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 cd "$DIR"
 
-# Перевірка віртуального оточення
+# Create the virtual environment if needed
 if [ ! -d ".venv" ]; then
-    echo "📦 Створення віртуального оточення..."
+    echo "📦 Creating virtual environment..."
     uv venv .venv 2>/dev/null || python3 -m venv .venv
 fi
 
-# Активація
+# Activate it
 source .venv/bin/activate
 
-# Перевірка flask та psutil
+# Install Flask and psutil if they are missing
 if ! python3 -c "import flask, psutil" 2>/dev/null; then
-    echo "⬇️  Встановлення залежностей..."
+    echo "⬇️  Installing dependencies..."
     if command -v uv &>/dev/null; then
         uv pip install --python .venv/bin/python -r requirements.txt
     else
@@ -23,10 +23,10 @@ if ! python3 -c "import flask, psutil" 2>/dev/null; then
     fi
 fi
 
-# Якщо передано аргументи — запускаємо cli.py
+# With arguments, run the CLI
 if [ $# -gt 0 ]; then
     exec python3 cli.py "$@"
 else
-    # За замовчуванням запускаємо Web Dashboard
+    # Without arguments, start the web dashboard
     exec python3 cli.py web
 fi

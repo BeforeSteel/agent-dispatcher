@@ -16,7 +16,7 @@ SETTINGS_FILE = CONFIG_DIR / "settings.json"
 
 DEFAULT_SETTINGS = {
     "web_port": 8800,
-    "web_host": "0.0.0.0",
+    "web_host": "127.0.0.1",
     "theme": "dark",
     "scan_dirs": [
         str(HOME / "Projects"),

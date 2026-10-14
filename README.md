@@ -14,7 +14,7 @@ Use one place to see what is running, start or stop services, inspect logs, and 
 - Discover projects in selected directories and user systemd units, with registered applications marked in the results.
 - View recent application logs, process memory and uptime where available, and listening-port status.
 - Monitor host CPU and RAM; NVIDIA GPU, VRAM, temperature, and power are shown when `nvidia-smi` is available. The CLI also reports disk usage.
-- English, Ukrainian, and Russian interface translations. Some installer messages, CLI help, and prompts are still in Ukrainian.
+- English, Ukrainian, and Russian translations for the dashboard and the CLI. The language follows your system locale until you choose one.
 
 ## Requirements
 
@@ -122,7 +122,7 @@ bash run.sh web --host 127.0.0.1 --port 8800
 
 `run.sh` can create the virtual environment and install missing dependencies, using `uv` when available or Python/pip otherwise. Review the configuration defaults above before using it for the first time.
 
-**Network access:** the dashboard has no built-in authentication, and its API can register and execute commands with your user account's permissions. Always pass `--host 127.0.0.1` for local use; the current default is `0.0.0.0`, which listens on all interfaces. Host and port should be set with the command-line flags. Do not expose port 8800 directly to the internet. For access from another computer, keep the local binding and use an SSH tunnel:
+**Network access:** the dashboard has no built-in authentication, and its API can register and execute commands with your user account's permissions. By default it listens only on `127.0.0.1`, so it is reachable from the same computer only. `--host 0.0.0.0` makes it listen on all network interfaces; use that only on a network you fully trust, and never expose port 8800 directly to the internet. Installations from before v0.1.0 may have `"web_host": "0.0.0.0"` saved in `settings.json`; change it to `127.0.0.1` if you want local-only access. For access from another computer, keep the local binding and use an SSH tunnel:
 
 ```bash
 # Run on the client computer; replace user and server with your SSH destination.
@@ -256,7 +256,7 @@ Replace `app-id` with the ID of a registered application.
 
 `agents start all` and `agents stop all` operate on multiple registered applications. Use them only after reviewing your registry.
 
-For one command, `agents --lang en list` overrides the display language. `AGENTS_LANG=en` overrides the saved language for the process. The supported language codes are `en`, `uk`, and `ru`.
+For one command, `agents --lang en list` overrides the display language. `AGENTS_LANG=en` overrides the saved language for the process. Without a saved language, the dispatcher follows the system locale (`LANG`) and falls back to English. The supported language codes are `en`, `uk`, and `ru`.
 
 For live systemd or Docker logs, use their native commands:
 
@@ -279,6 +279,8 @@ An example settings file:
 ```json
 {
   "lang": "en",
+  "web_host": "127.0.0.1",
+  "web_port": 8800,
   "scan_dirs": [
     "/home/your-user/Projects",
     "/home/your-user/apps"
@@ -286,7 +288,7 @@ An example settings file:
 }
 ```
 
-Replace `your-user` and the directories with your actual paths. Paths in JSON must be absolute; `~` and `$HOME` are not expanded. Restart the dashboard after editing configuration files.
+Replace `your-user` and the directories with your actual paths. Paths in JSON must be absolute; `~` and `$HOME` are not expanded. `web_host` and `web_port` are used by `agents web` when `--host` or `--port` is not given. Restart the dashboard after editing configuration files.
 
 Background applications can additionally define `port`, `url`, `pid_file`, `log_file`, `stop_cmd`, and `venv_path`. See [the Agent model](dispatcher/models.py) for all fields. The `auto_start`, `health_endpoint`, and `restart_cmd` fields are currently reserved and do not implement automatic startup, HTTP health checks, or a custom restart action.
 

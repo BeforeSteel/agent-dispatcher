@@ -193,7 +193,7 @@ def _analyze_candidate(p: Path, has_app: bool, has_run: bool, has_cli: bool, sh_
     name = readme["title"] or p.name.replace("_", " ").title()
     desc = readme["desc"] or f"Micro-application in {p.name}"
 
-    # If launcher script exists (e.g. "Запустить Идейный Поиск МК.sh")
+    # If a launcher script exists (e.g. "Start My App.sh" or "Запуск.sh")
     start_cmd = None
     if sh_scripts:
         # Prefer script with 'запуск' or 'run' or 'start'

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Agent Dispatcher CLI - Керування агентами та мікрододатками з командного рядка
+Agent Dispatcher CLI - manage agents and micro-apps from the command line
 """
 
 import sys
@@ -39,7 +39,7 @@ def cmd_list(manager: AgentManager, args):
     lang = getattr(args, "lang", None) or get_current_lang()
     statuses = manager.list_all_status(lang=lang)
     if not statuses:
-        print(f"\n{C_YELLOW}Реєстр порожній. Виконайте `agents scan` для пошуку додатків.{C_RESET}\n")
+        print(f"\n{C_YELLOW}{t('cli.empty_registry', lang=lang)}{C_RESET}\n")
         return
 
     # Count stats
@@ -106,7 +106,7 @@ def cmd_status(manager: AgentManager, args):
 
     agent = manager.get_agent(args.agent_id)
     if not agent:
-        print(f"{C_RED}❌ Агента '{args.agent_id}' не знайдено в реєстрі.{C_RESET}")
+        print(f"{C_RED}❌ {t('cli.agent_not_found', id=args.agent_id)}{C_RESET}")
         return
 
     st = manager.get_status(args.agent_id, lang=lang)
@@ -165,7 +165,7 @@ def cmd_status(manager: AgentManager, args):
 def cmd_start(manager: AgentManager, args):
     """Start an agent or all agents."""
     if args.agent_id.lower() == "all":
-        print(f"\n{C_BOLD}🚀 Масовий запуск усіх фонових сервісів...{C_RESET}")
+        print(f"\n{C_BOLD}🚀 {t('cli.start_all')}{C_RESET}")
         for agent in manager.list_agents():
             if agent.type in ("daemon", "systemd", "docker"):
                 ok, msg = manager.start(agent.id)
@@ -183,14 +183,14 @@ def cmd_start(manager: AgentManager, args):
                 print(f"   🌐 {u['label']}: {C_CYAN}{u['url']}{C_RESET}")
         print()
     else:
-        print(f"\n{C_RED}❌ Помилка запуску: {msg}{C_RESET}\n")
+        print(f"\n{C_RED}❌ {t('cli.start_failed', msg=msg)}{C_RESET}\n")
         sys.exit(1)
 
 
 def cmd_stop(manager: AgentManager, args):
     """Stop an agent or all agents."""
     if args.agent_id.lower() == "all":
-        print(f"\n{C_BOLD}⏹ Зупинка всіх активних сервісів...{C_RESET}")
+        print(f"\n{C_BOLD}⏹ {t('cli.stop_all')}{C_RESET}")
         for agent in manager.list_agents():
             st = manager.get_status(agent.id)
             if st.is_running:
@@ -204,13 +204,13 @@ def cmd_stop(manager: AgentManager, args):
     if ok:
         print(f"\n{C_GREEN}✅ {msg}{C_RESET}\n")
     else:
-        print(f"\n{C_RED}❌ Помилка зупинки: {msg}{C_RESET}\n")
+        print(f"\n{C_RED}❌ {t('cli.stop_failed', msg=msg)}{C_RESET}\n")
         sys.exit(1)
 
 
 def cmd_restart(manager: AgentManager, args):
     """Restart an agent."""
-    print(f"\n{C_YELLOW}🔄 Перезапуск {args.agent_id}...{C_RESET}")
+    print(f"\n{C_YELLOW}🔄 {t('cli.restarting', id=args.agent_id)}{C_RESET}")
     ok, msg = manager.restart(args.agent_id)
     if ok:
         print(f"{C_GREEN}✅ {msg}{C_RESET}\n")
@@ -223,18 +223,18 @@ def cmd_logs(manager: AgentManager, args):
     """Display logs or follow stream."""
     agent = manager.get_agent(args.agent_id)
     if not agent:
-        print(f"{C_RED}❌ Агента '{args.agent_id}' не знайдено.{C_RESET}")
+        print(f"{C_RED}❌ {t('cli.agent_not_found', id=args.agent_id)}{C_RESET}")
         return
 
     lines = args.lines or 50
     if not args.follow:
         log_lines = manager.get_logs(args.agent_id, lines=lines)
-        print_header(f"Логи: {agent.name} (останні {len(log_lines)} рядків)")
+        print_header(t("cli.logs_title", name=agent.name, n=len(log_lines)))
         for l in log_lines:
             print(l)
         print()
     else:
-        print_header(f"Стрім логів: {agent.name} (Ctrl+C для виходу)")
+        print_header(t("cli.logs_follow_title", name=agent.name))
         # Show initial chunk
         initial = manager.get_logs(args.agent_id, lines=20)
         for l in initial:
@@ -242,7 +242,7 @@ def cmd_logs(manager: AgentManager, args):
 
         log_path = manager.get_log_file(agent)
         if not log_path.exists():
-            print(f"{C_YELLOW}Файл логів поки що не створено. Очікування...{C_RESET}")
+            print(f"{C_YELLOW}{t('cli.logs_waiting')}{C_RESET}")
 
         try:
             with open(log_path, "r", encoding="utf-8", errors="replace") as f:
@@ -254,7 +254,7 @@ def cmd_logs(manager: AgentManager, args):
                     else:
                         time.sleep(0.3)
         except KeyboardInterrupt:
-            print(f"\n{C_DIM}Стрімінг завершено.{C_RESET}\n")
+            print(f"\n{C_DIM}{t('cli.logs_follow_done')}{C_RESET}\n")
 
 
 def cmd_open(manager: AgentManager, args):
@@ -274,7 +274,7 @@ def cmd_run(manager: AgentManager, args):
 
 def cmd_scan(manager: AgentManager, args):
     """Scan filesystem for micro-applications and agents."""
-    print(f"\n{C_BOLD}🔍 Сканування системи на наявність мікрододатків та агентів...{C_RESET}")
+    print(f"\n{C_BOLD}🔍 {t('cli.scanning')}{C_RESET}")
     candidates = manager.scan_for_microapps()
 
     new_found = [c for c in candidates if not c.get("is_registered")]
@@ -282,20 +282,20 @@ def cmd_scan(manager: AgentManager, args):
 
     print(f"{C_DIM}{'─' * 84}{C_RESET}")
     if new_found:
-        print(f"\n{C_BOLD}{C_GREEN}✨ Знайдено нові мікрододатки ({len(new_found)}):{C_RESET}")
-        print(f"{C_BOLD}{C_BLUE}{'ID':<16} {'НАЗВА':<24} {'ТИП':<10} {'ПОРТ':<8} КАТАЛОГ{C_RESET}")
+        print(f"\n{C_BOLD}{C_GREEN}✨ {t('cli.scan_found', n=len(new_found))}{C_RESET}")
+        print(f"{C_BOLD}{C_BLUE}{t('cli.col.id'):<16} {t('cli.col.name'):<24} {t('cli.col.type'):<10} {t('cli.col.port'):<8} {t('cli.col.dir')}{C_RESET}")
         print(f"{C_DIM}{'─' * 84}{C_RESET}")
         for c in new_found:
             port_s = str(c.get("port") or "—")
             print(f" {C_YELLOW}{c['id']:<16}{C_RESET} {c['name'][:23]:<24} {c['type']:<10} {port_s:<8} {C_DIM}{c.get('working_dir') or '—'}{C_RESET}")
 
-        print(f"\n{C_BOLD}Щоб додати знайдений додаток у диспетчер, виконайте:{C_RESET}")
+        print(f"\n{C_BOLD}{t('cli.scan_add_hint')}{C_RESET}")
         print(f"  {C_CYAN}agents add --id {new_found[0]['id']}{C_RESET}")
     else:
-        print(f"\n{C_GREEN}Всі знайдені мікрододатки вже зареєстровані в диспетчері!{C_RESET}")
+        print(f"\n{C_GREEN}{t('cli.scan_all_registered')}{C_RESET}")
 
     if already_reg:
-        print(f"\n{C_DIM}Вже зареєстровано в системі: {len(already_reg)} додатків.{C_RESET}\n")
+        print(f"\n{C_DIM}{t('cli.scan_already_count', n=len(already_reg))}{C_RESET}\n")
 
 
 def cmd_add(manager: AgentManager, args):
@@ -305,7 +305,7 @@ def cmd_add(manager: AgentManager, args):
         candidates = manager.scan_for_microapps()
         match = next((c for c in candidates if c["id"] == args.id), None)
         if match and match.get("is_registered"):
-            print(f"{C_YELLOW}⚠️  '{args.id}' вже зареєстрований як '{match['registered_as']}'.{C_RESET}")
+            print(f"{C_YELLOW}⚠️  {t('cli.already_registered_as', id=args.id, existing=match['registered_as'])}{C_RESET}")
             return
         if match:
             ok, msg = manager.add_agent(match)
@@ -316,13 +316,13 @@ def cmd_add(manager: AgentManager, args):
             return
 
     # Interactive or flags
-    agent_id = args.id or input("Введіть ID агента (наприклад: my-bot): ").strip()
+    agent_id = args.id or input(t("cli.prompt_id")).strip()
     if not agent_id:
-        print(f"{C_RED}ID не може бути порожнім.{C_RESET}")
+        print(f"{C_RED}{t('cli.id_empty')}{C_RESET}")
         return
 
-    name = args.name or input("Введіть назву (наприклад: My Bot Service): ").strip() or agent_id
-    work_dir = args.dir or input("Шлях до каталогу: ").strip() or None
+    name = args.name or input(t("cli.prompt_name")).strip() or agent_id
+    work_dir = args.dir or input(t("cli.prompt_dir")).strip() or None
     port = int(args.port) if args.port else None
     app_type = args.type or ("web_app" if port else "daemon")
 
@@ -334,7 +334,7 @@ def cmd_add(manager: AgentManager, args):
         "port": port,
         "url": f"http://localhost:{port}" if port else None,
         "start_cmd": args.start_cmd or None,
-        "description": args.desc or f"Мікрододаток {name}"
+        "description": args.desc or t("cli.default_desc", name=name)
     }
 
     ok, msg = manager.add_agent(data)
@@ -356,26 +356,31 @@ def cmd_remove(manager: AgentManager, args):
 def cmd_health(manager: AgentManager, args):
     """Check host system health and resources."""
     stats = get_system_stats()
-    print_header(f"Системні ресурси ({stats.get('hostname')})")
-    print(f"  {C_BOLD}Завантаження CPU:{C_RESET} {stats.get('cpu_percent')}% ({stats.get('cpu_count')} ядер)")
+    print_header(t("cli.health_title", host=stats.get("hostname")))
+    print(f"  {C_BOLD}{t('cli.health_cpu')}:{C_RESET} {stats.get('cpu_percent')}% ({stats.get('cpu_count')} {t('stats.cores')})")
     if "memory_total_gb" in stats:
-        print(f"  {C_BOLD}Оперативна пам'ять:{C_RESET} {stats.get('memory_used_gb')} GB / {stats.get('memory_total_gb')} GB ({stats.get('memory_percent')}%)")
+        print(f"  {C_BOLD}{t('cli.health_ram')}:{C_RESET} {stats.get('memory_used_gb')} GB / {stats.get('memory_total_gb')} GB ({stats.get('memory_percent')}%)")
 
     gpu = stats.get("gpu")
     if gpu:
-        print(f"\n  {C_BOLD}Відеокарта ({gpu.get('name')}):{C_RESET}")
-        print(f"    • Завантаження GPU:  {C_GREEN}{gpu.get('gpu_util_percent')}%{C_RESET}")
-        print(f"    • Відеопам'ять VRAM: {C_CYAN}{gpu.get('mem_used_gb')} GB{C_RESET} / {gpu.get('mem_total_gb')} GB ({gpu.get('mem_percent')}%)")
-        print(f"    • Температура:       {C_YELLOW}{gpu.get('temperature_c')}°C{C_RESET} (Потужність: {gpu.get('power_w')}W / {gpu.get('power_limit_w')}W)")
+        gpu_load = f"{t('cli.health_gpu_load')}:"
+        vram = f"{t('cli.health_vram')}:"
+        temp = f"{t('cli.health_temp')}:"
+        width = max(len(gpu_load), len(vram), len(temp)) + 1
+        print(f"\n  {C_BOLD}{t('cli.health_gpu', name=gpu.get('name'))}:{C_RESET}")
+        print(f"    • {gpu_load:<{width}}{C_GREEN}{gpu.get('gpu_util_percent')}%{C_RESET}")
+        print(f"    • {vram:<{width}}{C_CYAN}{gpu.get('mem_used_gb')} GB{C_RESET} / {gpu.get('mem_total_gb')} GB ({gpu.get('mem_percent')}%)")
+        print(f"    • {temp:<{width}}{C_YELLOW}{gpu.get('temperature_c')}°C{C_RESET} ({t('cli.health_power')}: {gpu.get('power_w')}W / {gpu.get('power_limit_w')}W)")
 
     disks = stats.get("disks", {})
     if disks:
-        print(f"\n  {C_BOLD}Дисковий простір:{C_RESET}")
+        print(f"\n  {C_BOLD}{t('cli.health_disks')}:{C_RESET}")
         for path, du in disks.items():
-            print(f"    • {path:<20} Вільних: {du['free_gb']} GB із {du['total_gb']} GB ({du['percent']}% зайнято)")
+            usage = t("cli.health_disk_line", free=du["free_gb"], total=du["total_gb"], percent=du["percent"])
+            print(f"    • {path:<20} {usage}")
 
     ips = stats.get("ips", {})
-    print(f"\n  {C_BOLD}Мережеві інтерфейси:{C_RESET}")
+    print(f"\n  {C_BOLD}{t('cli.health_net')}:{C_RESET}")
     for k, v in ips.items():
         print(f"    • {k.upper():<12} {C_CYAN}{v}{C_RESET}")
     print()
@@ -387,105 +392,121 @@ def cmd_lang(manager: AgentManager, args):
 
     if not getattr(args, "code", None):
         cur = get_current_lang()
-        print(f"\n🌍 Поточна мова / Current language: {C_BOLD}{C_CYAN}{cur.upper()}{C_RESET}")
-        print(f"   Підтримуються / Supported: {', '.join(SUPPORTED_LANGUAGES)}")
-        print(f"   Змінити / Switch: {C_YELLOW}agents lang <uk|en|ru>{C_RESET}\n")
+        print(f"\n🌍 {t('cli.lang_current')}: {C_BOLD}{C_CYAN}{cur.upper()}{C_RESET}")
+        print(f"   {t('cli.lang_supported')}: {', '.join(SUPPORTED_LANGUAGES)}")
+        print(f"   {t('cli.lang_switch')}: {C_YELLOW}agents lang <uk|en|ru>{C_RESET}\n")
         return
 
     code = args.code.lower()
     if code not in SUPPORTED_LANGUAGES:
-        print(f"{C_RED}❌ Непідтримувана мова: {code}. Доступні: {', '.join(SUPPORTED_LANGUAGES)}{C_RESET}")
+        print(f"{C_RED}❌ {t('cli.lang_unsupported', code=code, available=', '.join(SUPPORTED_LANGUAGES))}{C_RESET}")
         return
 
     settings = manager.settings
     settings["lang"] = code
     save_settings(settings)
-    print(f"{C_GREEN}✅ Мову інтерфейсу змінено на {code.upper()}!{C_RESET}\n")
+    print(f"{C_GREEN}✅ {t('cli.lang_changed', lang=code, code=code.upper())}{C_RESET}\n")
 
 
 def cmd_web(manager: AgentManager, args):
     """Start the Web Dashboard interface."""
     from dispatcher.web_server import run_web_dashboard
     port = args.port or manager.settings.get("web_port", 8800)
-    host = args.host or manager.settings.get("web_host", "0.0.0.0")
+    host = args.host or manager.settings.get("web_host", "127.0.0.1")
     run_web_dashboard(manager, host=host, port=port)
 
 
+def argv_lang(argv) -> str:
+    """Language passed with --lang, read before argparse so that its help is translated too."""
+    for i, arg in enumerate(argv):
+        if arg == "--lang" and i + 1 < len(argv):
+            value = argv[i + 1]
+        elif arg.startswith("--lang="):
+            value = arg.split("=", 1)[1]
+        else:
+            continue
+        if value in SUPPORTED_LANGUAGES:
+            return value
+    return ""
+
+
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog="agents",
-        description="⬡ Диспетчер Агентів та Мікрододатків — запуск, контроль та моніторинг"
-    )
-    parser.add_argument("--lang", choices=["uk", "en", "ru"], help="Мова інтерфейсу / Language (uk, en, ru)")
-    sub = parser.add_subparsers(dest="command", help="Команда диспетчера")
+    parser = argparse.ArgumentParser(prog="agents", description=t("cli.help.description"))
+    parser.add_argument("--lang", choices=SUPPORTED_LANGUAGES, help=t("cli.help.lang"))
+    sub = parser.add_subparsers(dest="command", help=t("cli.help.command"))
 
     # lang
-    p_lang = sub.add_parser("lang", help="Переглянути або змінити мову інтерфейсу (uk, en, ru)")
-    p_lang.add_argument("code", nargs="?", choices=["uk", "en", "ru"], help="Код мови")
+    p_lang = sub.add_parser("lang", help=t("cli.help.lang_cmd"))
+    p_lang.add_argument("code", nargs="?", choices=SUPPORTED_LANGUAGES, help=t("cli.help.lang_code"))
 
     # list
-    p_list = sub.add_parser("list", aliases=["ls", "ps"], help="Список усіх агентів та їх стан")
+    p_list = sub.add_parser("list", aliases=["ls", "ps"], help=t("cli.help.list"))
 
     # status
-    p_status = sub.add_parser("status", help="Детальний статус конкретного агента")
-    p_status.add_argument("agent_id", nargs="?", default=None, help="ID агента")
+    p_status = sub.add_parser("status", help=t("cli.help.status"))
+    p_status.add_argument("agent_id", nargs="?", default=None, help=t("cli.help.agent_id"))
 
     # start
-    p_start = sub.add_parser("start", help="Запустити агента або сервіс (або 'all')")
-    p_start.add_argument("agent_id", help="ID агента або 'all'")
+    p_start = sub.add_parser("start", help=t("cli.help.start"))
+    p_start.add_argument("agent_id", help=t("cli.help.agent_id_or_all"))
 
     # stop
-    p_stop = sub.add_parser("stop", help="Зупинити агента або сервіс (або 'all')")
-    p_stop.add_argument("agent_id", help="ID агента або 'all'")
+    p_stop = sub.add_parser("stop", help=t("cli.help.stop"))
+    p_stop.add_argument("agent_id", help=t("cli.help.agent_id_or_all"))
 
     # restart
-    p_restart = sub.add_parser("restart", help="Перезапустити агента")
-    p_restart.add_argument("agent_id", help="ID агента")
+    p_restart = sub.add_parser("restart", help=t("cli.help.restart"))
+    p_restart.add_argument("agent_id", help=t("cli.help.agent_id"))
 
     # logs
-    p_logs = sub.add_parser("logs", help="Переглянути логи агента")
-    p_logs.add_argument("agent_id", help="ID агента")
-    p_logs.add_argument("-n", "--lines", type=int, default=50, help="Кількість рядків")
-    p_logs.add_argument("-f", "--follow", action="store_true", help="Стрімінг нових рядків (live follow)")
+    p_logs = sub.add_parser("logs", help=t("cli.help.logs"))
+    p_logs.add_argument("agent_id", help=t("cli.help.agent_id"))
+    p_logs.add_argument("-n", "--lines", type=int, default=50, help=t("cli.help.lines"))
+    p_logs.add_argument("-f", "--follow", action="store_true", help=t("cli.help.follow"))
 
     # open
-    p_open = sub.add_parser("open", help="Відкрити веб-інтерфейс у браузері")
-    p_open.add_argument("agent_id", help="ID агента")
+    p_open = sub.add_parser("open", help=t("cli.help.open"))
+    p_open.add_argument("agent_id", help=t("cli.help.agent_id"))
 
     # run
-    p_run = sub.add_parser("run", help="Запустити CLI агента з параметрами")
-    p_run.add_argument("agent_id", help="ID агента")
-    p_run.add_argument("extra_args", nargs="*", help="Аргументи для команди агента")
+    p_run = sub.add_parser("run", help=t("cli.help.run"))
+    p_run.add_argument("agent_id", help=t("cli.help.agent_id"))
+    p_run.add_argument("extra_args", nargs="*", help=t("cli.help.extra_args"))
 
     # scan
-    sub.add_parser("scan", aliases=["discover"], help="Пошук нових мікрододатків у системі")
+    sub.add_parser("scan", aliases=["discover"], help=t("cli.help.scan"))
 
     # add
-    p_add = sub.add_parser("add", help="Зареєструвати новий додаток у диспетчер")
-    p_add.add_argument("--id", help="ID агента")
-    p_add.add_argument("--name", help="Назва")
-    p_add.add_argument("--dir", help="Каталог проєкту")
-    p_add.add_argument("--port", type=int, help="Порт")
-    p_add.add_argument("--type", choices=["daemon", "systemd", "cli", "docker"], help="Тип")
-    p_add.add_argument("--start-cmd", help="Команда запуску")
-    p_add.add_argument("--desc", help="Опис")
+    p_add = sub.add_parser("add", help=t("cli.help.add"))
+    p_add.add_argument("--id", help=t("cli.help.agent_id"))
+    p_add.add_argument("--name", help=t("cli.help.name"))
+    p_add.add_argument("--dir", help=t("cli.help.dir"))
+    p_add.add_argument("--port", type=int, help=t("cli.help.port"))
+    p_add.add_argument("--type", choices=["daemon", "systemd", "cli", "docker"], help=t("cli.help.type"))
+    p_add.add_argument("--start-cmd", help=t("cli.help.start_cmd"))
+    p_add.add_argument("--desc", help=t("cli.help.desc"))
 
     # remove
-    p_rm = sub.add_parser("remove", aliases=["rm", "delete"], help="Видалити додаток із реєстру")
-    p_rm.add_argument("agent_id", help="ID агента")
+    p_rm = sub.add_parser("remove", aliases=["rm", "delete"], help=t("cli.help.remove"))
+    p_rm.add_argument("agent_id", help=t("cli.help.agent_id"))
 
     # health
-    sub.add_parser("health", help="Стан системних ресурсів (CPU, RAM, Disks, Network)")
+    sub.add_parser("health", help=t("cli.help.health"))
 
-    # web
-    p_web = sub.add_parser("web", aliases=["gui", "dashboard"], help="Запустити Web-інтерфейс диспетчера")
-    p_web.add_argument("-p", "--port", type=int, default=8800, help="Порт веб-сервера (за замовчуванням 8800)")
-    p_web.add_argument("--host", default="0.0.0.0", help="Хост веб-сервера (за замовчуванням 0.0.0.0)")
+    # web: no argparse defaults, so web_host / web_port from settings.json apply
+    p_web = sub.add_parser("web", aliases=["gui", "dashboard"], help=t("cli.help.web"))
+    p_web.add_argument("-p", "--port", type=int, default=None, help=t("cli.help.web_port"))
+    p_web.add_argument("--host", default=None, help=t("cli.help.web_host"))
 
     return parser
 
 
 def main():
+    # --lang applies to every message of this run, including translated --help
+    lang = argv_lang(sys.argv[1:])
+    if lang:
+        os.environ["AGENTS_LANG"] = lang
+
     parser = build_parser()
     if len(sys.argv) == 1:
         # Default to list if no arguments passed

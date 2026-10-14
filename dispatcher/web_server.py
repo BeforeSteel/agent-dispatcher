@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 from flask import Flask, render_template, jsonify, request, send_from_directory
 
+from . import __version__
 from .manager import AgentManager
 from .system_info import get_system_stats, get_network_urls, get_network_ips
 
@@ -31,7 +32,7 @@ def create_app(manager: AgentManager = None) -> Flask:
 
     @app.route("/")
     def index():
-        return render_template("index.html")
+        return render_template("index.html", version=__version__)
 
     # API Endpoints
     @app.route("/api/status")
@@ -139,23 +140,36 @@ def create_app(manager: AgentManager = None) -> Flask:
     return app
 
 
-def run_web_dashboard(manager: AgentManager, host: str = "0.0.0.0", port: int = 8800):
+LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1"}
+WILDCARD_HOSTS = {"0.0.0.0", "::", ""}
+
+
+def run_web_dashboard(manager: AgentManager, host: str = "127.0.0.1", port: int = 8800):
     """Run Flask development server with network summary output."""
+    from .i18n import t
+
     app = create_app(manager)
 
-    ips = get_network_ips()
-    lan_ip = ips.get("lan", "127.0.0.1")
-    tailscale_ip = ips.get("tailscale")
-
     print("\n" + "═" * 70)
-    print(" 🚀 Диспетчер Агентів — Web Dashboard запущено!")
+    print(f" 🚀 {t('web.started')}")
     print("═" * 70)
-    print(f" 🌐 Локально:      http://localhost:{port}")
-    if lan_ip != "127.0.0.1":
-        print(f" 🌐 У мережі LAN:  http://{lan_ip}:{port}")
-    if tailscale_ip:
-        print(f" 🌐 Tailscale:     http://{tailscale_ip}:{port}")
+    if host in LOOPBACK_HOSTS or host in WILDCARD_HOSTS:
+        print(f" 🌐 {t('web.local') + ':':<15} http://localhost:{port}")
+    else:
+        print(f" 🌐 {host + ':':<15} http://{host}:{port}")
+
+    # Network addresses are only reachable when the server listens on all interfaces
+    if host in WILDCARD_HOSTS:
+        ips = get_network_ips()
+        if "lan" in ips:
+            print(f" 🌐 {t('web.lan') + ':':<15} http://{ips['lan']}:{port}")
+        if "tailscale" in ips:
+            print(f" 🌐 {'Tailscale:':<15} http://{ips['tailscale']}:{port}")
     print("═" * 70)
-    print(" Натисніть CTRL+C для зупинки сервера.\n")
+    if host in LOOPBACK_HOSTS:
+        print(f" {t('web.local_only')}")
+    else:
+        print(f" ⚠️  {t('web.exposed_warning', host=host or '0.0.0.0')}")
+    print(f" {t('web.stop_hint')}\n")
 
     app.run(host=host, port=port, debug=False)

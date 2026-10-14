@@ -30,7 +30,7 @@ This is a personal project maintained on a best-effort basis. You will get a rep
 Agent Dispatcher is designed to run on a single computer for one user. Keep these properties in mind when assessing an issue:
 
 - The dashboard has **no built-in authentication**. Its HTTP API can register applications and run commands with the permissions of the user who started it.
-- The dashboard is meant to listen on `127.0.0.1` and be reached locally or through an SSH tunnel. The current default host is `0.0.0.0`; always pass `--host 127.0.0.1` unless you understand the risk. See [Network access](README.md#6-start-the-dashboard).
+- The dashboard listens on `127.0.0.1` by default and is meant to be reached locally or through an SSH tunnel. Listening on other interfaces, for example with `--host 0.0.0.0`, has to be chosen explicitly. See [Network access](README.md#6-start-the-dashboard).
 - Registered applications, systemd units, and Docker containers are run as configured by the user. The dispatcher does not sandbox them.
 
 Examples of issues that are **in scope**:
