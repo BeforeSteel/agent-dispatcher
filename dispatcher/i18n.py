@@ -12,7 +12,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
     "uk": {
         # General / App
         "app.title": "Agent Dispatcher",
-        "app.subtitle": "Централізований диспетчер мікрододатків та ШІ-агентів",
+        "app.subtitle": "Запуск і моніторинг локальних додатків, сервісів і контейнерів",
         "app.version": "v0.1.0",
         
         # Header & Stats
@@ -212,7 +212,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
     "en": {
         # General / App
         "app.title": "Agent Dispatcher",
-        "app.subtitle": "Centralized micro-app & AI agent orchestrator",
+        "app.subtitle": "Run and monitor your local apps, services and containers",
         "app.version": "v0.1.0",
         
         # Header & Stats
@@ -412,7 +412,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
     "ru": {
         # General / App
         "app.title": "Agent Dispatcher",
-        "app.subtitle": "Централизованный диспетчер микроприложений и ИИ-агентов",
+        "app.subtitle": "Запуск и мониторинг локальных приложений, сервисов и контейнеров",
         "app.version": "v0.1.0",
         
         # Header & Stats
