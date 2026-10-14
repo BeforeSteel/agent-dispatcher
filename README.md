@@ -4,6 +4,11 @@ A lightweight Linux dashboard and command-line tool for discovering, monitoring,
 
 Use one place to see what is running, start or stop services, inspect logs, and open application web interfaces. Agent Dispatcher manages application processes; it does not schedule AI tasks or coordinate conversations between agents.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/dashboard-dark.png">
+  <img alt="Agent Dispatcher dashboard with running, stopped and CLI applications, and host CPU, RAM and GPU statistics" src="docs/screenshots/dashboard-light.png">
+</picture>
+
 [Installation](#installation) · [First application](#try-your-first-application) · [CLI reference](#cli-reference) · [Configuration](#configuration) · [Troubleshooting](#troubleshooting) · [Contributing](#contributing) · [License](#license)
 
 ## Features
