@@ -4,7 +4,7 @@ A lightweight Linux dashboard and command-line tool for discovering, monitoring,
 
 Use one place to see what is running, start or stop services, inspect logs, and open application web interfaces. Agent Dispatcher manages application processes; it does not schedule AI tasks or coordinate conversations between agents.
 
-[Installation](#installation) · [First application](#try-your-first-application) · [CLI reference](#cli-reference) · [Configuration](#configuration) · [Troubleshooting](#troubleshooting) · [License](#license)
+[Installation](#installation) · [First application](#try-your-first-application) · [CLI reference](#cli-reference) · [Configuration](#configuration) · [Troubleshooting](#troubleshooting) · [Contributing](#contributing) · [License](#license)
 
 ## Features
 
@@ -330,6 +330,10 @@ rm -- "$HOME/.local/bin/agents" "$HOME/.local/bin/agent-dispatch"
 ```
 
 You can then delete the checkout. Configuration and logs remain in the locations listed above; back them up before removing them if you need a complete cleanup.
+
+## Contributing
+
+Bug reports, ideas, and pull requests are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md) first. Report security vulnerabilities privately as described in [SECURITY.md](SECURITY.md), not in public issues.
 
 ## License
 

@@ -1,0 +1,49 @@
+name: Feature request
+description: Suggest an idea or an improvement.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion. Agent Dispatcher manages local application processes; it does not schedule AI tasks or coordinate agents.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Web dashboard
+        - CLI
+        - Discovery (scan and import)
+        - systemd integration
+        - Docker integration
+        - System and GPU statistics
+        - Translations
+        - Installation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do, and what makes it hard today?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: How would you like it to work? Example commands or a sketch of the dashboard are welcome.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Workarounds you use now, or other approaches you thought about.
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I would like to work on this myself.
